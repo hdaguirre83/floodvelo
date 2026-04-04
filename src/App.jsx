@@ -1,12 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
-// ── Cloudinary config ──────────────────────────────────────────────────────
-const CLOUDINARY_CLOUD = "dasxovn1b";
-const CLOUDINARY_PRESET = "floodvelo_videos";
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`;
-
-// ── Constantes ─────────────────────────────────────────────────────────────
 const VIDEO_CONDITIONS = ["Diurno - cielo despejado","Diurno - nublado","Diurno - lluvia activa","Nocturno - iluminado","Nocturno - sin iluminación"];
 const CAMERA_TYPES = ["Smartphone (frontal)","Smartphone (trasera)","Drone / UAV","Cámara fija instalada","Cámara de acción (GoPro, etc.)","Otro"];
 const TUCUMAN_DEPTS = ["Capital","Burruyacú","Cruz Alta","Chicligasta","Famaillá","Graneros","Juan B. Alberdi","La Cocha","Leales","Lules","Monteros","Río Chico","Simoca","Tafí del Valle","Tafí Viejo","Trancas","Yerba Buena"];
@@ -28,7 +22,6 @@ export default function App() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStage, setUploadStage] = useState("");
   const [submissions, setSubmissions] = useState([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -37,7 +30,6 @@ export default function App() {
   const [geoError, setGeoError] = useState("");
   const [contactType, setContactType] = useState("email");
   const fileRef = useRef();
-  const xhrRef = useRef(null);
 
   // ── Cargar envíos desde Supabase ──────────────────────────────────────────
   const loadSubmissions = async () => {
@@ -82,98 +74,67 @@ export default function App() {
 
   const formValid = selectedFile && form.date && form.time && form.locality && form.contact;
 
-  // ── Upload a Cloudinary + guardar en Supabase ─────────────────────────────
-  const handleUpload = () => {
+  // ── Upload real a Supabase ────────────────────────────────────────────────
+  const handleUpload = async () => {
     if (!formValid) return;
     setUploading(true);
-    setUploadProgress(0);
-    setUploadStage("Subiendo video a Cloudinary...");
+    setUploadProgress(10);
     setError("");
 
-    const formData = new FormData();
-    formData.append("file", selectedFile);
-    formData.append("upload_preset", CLOUDINARY_PRESET);
-    formData.append("folder", "floodvelo");
-    formData.append("resource_type", "video");
+    try {
+      // 1. Subir el archivo al storage
+      const ext = selectedFile.name.split(".").pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const filePath = `videos/${fileName}`;
 
-    const xhr = new XMLHttpRequest();
-    xhrRef.current = xhr;
+      setUploadProgress(30);
 
-    // Progreso real de la subida
-    xhr.upload.onprogress = (e) => {
-      if (e.lengthComputable) {
-        const pct = Math.round((e.loaded / e.total) * 85);
-        setUploadProgress(pct);
-      }
-    };
+      const { error: storageError } = await supabase.storage
+        .from("videos")
+        .upload(filePath, selectedFile, { cacheControl: "3600", upsert: false });
 
-    xhr.onload = async () => {
-      if (xhr.status === 200) {
-        const cloudData = JSON.parse(xhr.responseText);
-        setUploadProgress(90);
-        setUploadStage("Guardando datos en la base de datos...");
+      if (storageError) throw new Error("Error al subir el video: " + storageError.message);
 
-        // Guardar metadatos en Supabase
-        const { error: dbError } = await supabase.from("submissions").insert({
-          file_name:       selectedFile.name,
-          file_path:       cloudData.secure_url,   // URL del video en Cloudinary
-          file_size_mb:    parseFloat((selectedFile.size / 1e6).toFixed(2)),
-          event_date:      form.date,
-          event_time:      form.time,
-          department:      form.dept,
-          locality:        form.locality,
-          lat:             form.lat ? parseFloat(form.lat) : null,
-          lng:             form.lng ? parseFloat(form.lng) : null,
-          light_condition: form.condition || null,
-          camera_type:     form.camera || null,
-          notes:           form.notes || null,
-          user_name:       form.name || null,
-          contact:         form.contact,
-          contact_type:    contactType,
-          status:          "pending",
-        });
+      setUploadProgress(70);
 
-        if (dbError) {
-          setError("Video subido pero error al guardar datos: " + dbError.message);
-          setUploading(false);
-          return;
-        }
+      // 2. Guardar los metadatos en la base de datos
+      const { error: dbError } = await supabase.from("submissions").insert({
+        file_name:       selectedFile.name,
+        file_path:       filePath,
+        file_size_mb:    parseFloat((selectedFile.size / 1e6).toFixed(2)),
+        event_date:      form.date,
+        event_time:      form.time,
+        department:      form.dept,
+        locality:        form.locality,
+        lat:             form.lat ? parseFloat(form.lat) : null,
+        lng:             form.lng ? parseFloat(form.lng) : null,
+        light_condition: form.condition || null,
+        camera_type:     form.camera || null,
+        notes:           form.notes || null,
+        user_name:       form.name || null,
+        contact:         form.contact,
+        contact_type:    contactType,
+        status:          "pending",
+      });
 
-        setUploadProgress(100);
-        setTimeout(() => {
-          setUploading(false);
-          setUploadProgress(0);
-          setUploadStage("");
-          setSelectedFile(null);
-          setPreview(null);
-          setForm(EMPTY_FORM);
-          setSuccess(true);
-          setGeoError("");
-        }, 500);
+      if (dbError) throw new Error("Error al guardar los datos: " + dbError.message);
 
-      } else {
-        let msg = "Error al subir el video.";
-        try { msg = JSON.parse(xhr.responseText)?.error?.message || msg; } catch {}
-        setError(msg);
+      setUploadProgress(100);
+      setTimeout(() => {
         setUploading(false);
-      }
-    };
+        setUploadProgress(0);
+        setSelectedFile(null);
+        setPreview(null);
+        setForm(EMPTY_FORM);
+        setSuccess(true);
+        setGeoError("");
+      }, 500);
 
-    xhr.onerror = () => {
-      setError("Error de red. Verificá tu conexión e intentá de nuevo.");
+    } catch (err) {
+      setError(err.message);
       setUploading(false);
-    };
-
-    xhr.open("POST", CLOUDINARY_URL);
-    xhr.send(formData);
-  };
-
-  const cancelUpload = () => {
-    if (xhrRef.current) xhrRef.current.abort();
-    setUploading(false);
-    setUploadProgress(0);
-    setUploadStage("");
-    setError("Subida cancelada.");
+      setUploadProgress(0);
+    }
   };
 
   return (
@@ -194,8 +155,6 @@ export default function App() {
         .upload-btn { background: linear-gradient(135deg, #0369A1, #0EA5E9); border: none; border-radius: 4px; color: #fff; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.72rem; letter-spacing: 0.1em; padding: 0.75rem 1.75rem; text-transform: uppercase; transition: all 0.25s; font-weight: 700; }
         .upload-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(14,165,233,0.35); }
         .upload-btn:disabled { opacity: 0.38; cursor: not-allowed; }
-        .cancel-btn { background: none; border: 1px solid #EF4444; border-radius: 4px; color: #EF4444; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; padding: 0.5rem 1rem; transition: all 0.2s; }
-        .cancel-btn:hover { background: rgba(239,68,68,0.1); }
         .geo-btn { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.35); border-radius: 4px; color: #38BDF8; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 0.06em; padding: 0.52rem 0.8rem; transition: all 0.2s; white-space: nowrap; }
         .geo-btn:hover:not(:disabled) { background: rgba(56,189,248,0.18); }
         .geo-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -211,8 +170,8 @@ export default function App() {
         .drop-zone { border: 2px dashed #1E3A5F; border-radius: 8px; transition: all 0.3s; cursor: pointer; }
         .drop-zone.over { border-color: #38BDF8; background: rgba(56,189,248,0.04); }
         .tech-tag { background: rgba(56,189,248,0.08); border: 1px solid rgba(56,189,248,0.2); color: #38BDF8; font-size: 0.58rem; letter-spacing: 0.12em; padding: 0.12rem 0.45rem; border-radius: 2px; text-transform: uppercase; }
-        .progress-bar-outer { background: #1E293B; border-radius: 2px; overflow: hidden; height: 8px; }
-        .progress-bar-inner { height: 100%; background: linear-gradient(90deg, #0369A1, #38BDF8, #7DD3FC); border-radius: 2px; transition: width 0.4s; }
+        .progress-bar-outer { background: #1E293B; border-radius: 2px; overflow: hidden; height: 6px; }
+        .progress-bar-inner { height: 100%; background: linear-gradient(90deg, #0369A1, #38BDF8, #7DD3FC); border-radius: 2px; transition: width 0.5s; }
         .contact-toggle { display: inline-flex; border: 1px solid #1E3A5F; border-radius: 4px; overflow: hidden; }
         .contact-toggle button { background: none; border: none; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 0.65rem; padding: 0.38rem 0.9rem; transition: all 0.2s; letter-spacing: 0.06em; }
         .contact-toggle button.active { background: #0EA5E9; color: #fff; }
@@ -228,8 +187,6 @@ export default function App() {
         .section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.1em; font-size: 0.82rem; color: #64748B; margin-bottom: 1.1rem; border-bottom: 1px solid #1E293B; padding-bottom: 0.6rem; }
         a.map-link { color: #38BDF8; text-decoration: none; font-size: 0.63rem; }
         a.map-link:hover { text-decoration: underline; }
-        a.video-link { color: #38BDF8; text-decoration: none; font-size: 0.63rem; }
-        a.video-link:hover { text-decoration: underline; }
       `}</style>
 
       {/* HEADER */}
@@ -251,7 +208,7 @@ export default function App() {
 
       {/* TABS */}
       <div style={{ borderBottom: "1px solid #1E293B", padding: "0 1.5rem", display: "flex" }}>
-        {[["upload","📤  Subir Video"],["gallery","📋  Envíos"],["about","🔬  Metodología"]].map(([id, label]) => (
+        {[["upload","📤  Subir Video"],["about","🔬  Metodología"]].map(([id, label]) => (
           <button key={id} className={`tab-btn ${tab===id?"active":""}`} onClick={()=>setTab(id)}>{label}</button>
         ))}
       </div>
@@ -267,7 +224,7 @@ export default function App() {
                 <span style={{ fontSize: 20 }}>✅</span>
                 <div>
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, color: "#10B981", letterSpacing: "0.05em" }}>VIDEO ENVIADO Y GUARDADO CORRECTAMENTE</div>
-                  <div style={{ fontSize: "0.67rem", color: "#64748B", marginTop: 2 }}>Tu video quedó registrado. Te contactaremos si necesitamos más información.</div>
+                  <div style={{ fontSize: "0.67rem", color: "#64748B", marginTop: 2 }}>Tu video quedó registrado en nuestra base de datos. Te contactaremos si necesitamos más información.</div>
                 </div>
               </div>
             )}
@@ -276,7 +233,7 @@ export default function App() {
               <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 8, padding: "0.9rem 1.2rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
                 <span style={{ fontSize: 20 }}>❌</span>
                 <div>
-                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, color: "#EF4444" }}>ERROR</div>
+                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, color: "#EF4444", letterSpacing: "0.05em" }}>ERROR AL ENVIAR</div>
                   <div style={{ fontSize: "0.67rem", color: "#94A3B8", marginTop: 2 }}>{error}</div>
                 </div>
               </div>
@@ -307,24 +264,20 @@ export default function App() {
               onDragOver={e=>{e.preventDefault();setDragOver(true)}}
               onDragLeave={()=>setDragOver(false)}
               onDrop={handleDrop}
-              onClick={()=>!uploading && fileRef.current.click()}
+              onClick={()=>fileRef.current.click()}
             >
               <input ref={fileRef} type="file" accept="video/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&acceptFile(e.target.files[0])} />
               {preview ? (
                 <div onClick={e=>e.stopPropagation()}>
                   <video src={preview} style={{ maxWidth: "100%", maxHeight: 220, borderRadius: 6, border: "1px solid #1E3A5F" }} controls />
-                  <div style={{ marginTop: "0.6rem", fontSize: "0.7rem", color: "#38BDF8" }}>
-                    📹 {selectedFile?.name} · {(selectedFile?.size/1e6).toFixed(1)} MB
-                  </div>
-                  {!uploading && (
-                    <button style={{ marginTop: "0.4rem", background: "none", border: "none", color: "#475569", fontSize: "0.62rem", cursor: "pointer" }} onClick={e=>{e.stopPropagation();setSelectedFile(null);setPreview(null);}}>✕ CAMBIAR VIDEO</button>
-                  )}
+                  <div style={{ marginTop: "0.6rem", fontSize: "0.7rem", color: "#38BDF8" }}>📹 {selectedFile?.name} · {(selectedFile?.size/1e6).toFixed(1)} MB</div>
+                  <button style={{ marginTop: "0.4rem", background: "none", border: "none", color: "#475569", fontSize: "0.62rem", cursor: "pointer" }} onClick={e=>{e.stopPropagation();setSelectedFile(null);setPreview(null);}}>✕ CAMBIAR VIDEO</button>
                 </div>
               ) : (
                 <>
                   <div style={{ fontSize: 32, marginBottom: "0.6rem" }}>🎥</div>
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#CBD5E1" }}>ARRASTRÁ O HACÉ CLICK PARA SELECCIONAR</div>
-                  <div style={{ fontSize: "0.67rem", color: "#475569", marginTop: "0.35rem" }}>MP4, MOV, AVI, MKV</div>
+                  <div style={{ fontSize: "0.67rem", color: "#475569", marginTop: "0.35rem" }}>MP4, MOV, AVI, MKV — máx. 2 GB</div>
                   <div style={{ marginTop: "0.9rem", display: "flex", justifyContent: "center", gap: "0.75rem", flexWrap: "wrap" }}>
                     {["📐 Vista cenital","⏱ Mín. 10 seg","💡 Buena luz"].map(h=>(
                       <span key={h} style={{ fontSize: "0.62rem", color: "#334155", background: "#162032", padding: "0.18rem 0.55rem", borderRadius: 3 }}>{h}</span>
@@ -341,31 +294,31 @@ export default function App() {
                 <div className="grid2">
                   <div>
                     <label className="field-label">Fecha del evento <span className="req">*</span></label>
-                    <input type="date" className="field-input" value={form.date} onChange={e=>setF("date",e.target.value)} disabled={uploading} />
+                    <input type="date" className="field-input" value={form.date} onChange={e=>setF("date",e.target.value)} />
                   </div>
                   <div>
                     <label className="field-label">Hora de la captura <span className="req">*</span></label>
-                    <input type="time" className="field-input" value={form.time} onChange={e=>setF("time",e.target.value)} disabled={uploading} />
+                    <input type="time" className="field-input" value={form.time} onChange={e=>setF("time",e.target.value)} />
                   </div>
                 </div>
                 <div className="grid2">
                   <div>
                     <label className="field-label">Departamento <span className="req">*</span></label>
-                    <select className="field-input" value={form.dept} onChange={e=>setF("dept",e.target.value)} disabled={uploading}>
+                    <select className="field-input" value={form.dept} onChange={e=>setF("dept",e.target.value)}>
                       {TUCUMAN_DEPTS.map(d=><option key={d}>{d}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="field-label">Localidad / Barrio <span className="req">*</span></label>
-                    <input className="field-input" placeholder="ej: Villa Urquiza, Los Pocitos..." value={form.locality} onChange={e=>setF("locality",e.target.value)} disabled={uploading} />
+                    <input className="field-input" placeholder="ej: Villa Urquiza, Los Pocitos..." value={form.locality} onChange={e=>setF("locality",e.target.value)} />
                   </div>
                 </div>
                 <div>
                   <label className="field-label">Coordenadas GPS <span style={{ color: "#334155", textTransform: "none", fontSize: "0.6rem", letterSpacing: 0, marginLeft: 6 }}>— opcional</span></label>
                   <div style={{ display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
-                    <input className="field-input" style={{ flex: 1, minWidth: 110 }} placeholder="Latitud  ej: -26.8241" value={form.lat} onChange={e=>setF("lat",e.target.value)} disabled={uploading} />
-                    <input className="field-input" style={{ flex: 1, minWidth: 110 }} placeholder="Longitud  ej: -65.2226" value={form.lng} onChange={e=>setF("lng",e.target.value)} disabled={uploading} />
-                    <button className="geo-btn" disabled={geoLoading || uploading} onClick={getGeolocation}>
+                    <input className="field-input" style={{ flex: 1, minWidth: 110 }} placeholder="Latitud  ej: -26.8241" value={form.lat} onChange={e=>setF("lat",e.target.value)} />
+                    <input className="field-input" style={{ flex: 1, minWidth: 110 }} placeholder="Longitud  ej: -65.2226" value={form.lng} onChange={e=>setF("lng",e.target.value)} />
+                    <button className="geo-btn" disabled={geoLoading} onClick={getGeolocation}>
                       {geoLoading ? "⏳ Detectando..." : "📍 Usar mi ubicación"}
                     </button>
                   </div>
@@ -387,14 +340,14 @@ export default function App() {
                 <div className="grid2">
                   <div>
                     <label className="field-label">Condiciones de luz</label>
-                    <select className="field-input" value={form.condition} onChange={e=>setF("condition",e.target.value)} disabled={uploading}>
+                    <select className="field-input" value={form.condition} onChange={e=>setF("condition",e.target.value)}>
                       <option value="">— seleccionar —</option>
                       {VIDEO_CONDITIONS.map(c=><option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
                     <label className="field-label">Tipo de cámara</label>
-                    <select className="field-input" value={form.camera} onChange={e=>setF("camera",e.target.value)} disabled={uploading}>
+                    <select className="field-input" value={form.camera} onChange={e=>setF("camera",e.target.value)}>
                       <option value="">— seleccionar —</option>
                       {CAMERA_TYPES.map(c=><option key={c}>{c}</option>)}
                     </select>
@@ -402,7 +355,7 @@ export default function App() {
                 </div>
                 <div>
                   <label className="field-label">Observaciones</label>
-                  <textarea className="field-input" placeholder="Nombre del río, estimación visual de velocidad, descripción del evento..." value={form.notes} onChange={e=>setF("notes",e.target.value)} disabled={uploading} />
+                  <textarea className="field-input" placeholder="Nombre del río, estimación visual de velocidad, descripción del evento..." value={form.notes} onChange={e=>setF("notes",e.target.value)} />
                 </div>
               </div>
             </div>
@@ -416,14 +369,14 @@ export default function App() {
                 </div>
                 <div>
                   <label className="field-label">Tu nombre (opcional)</label>
-                  <input className="field-input" placeholder="ej: María García" value={form.name} onChange={e=>setF("name",e.target.value)} disabled={uploading} />
+                  <input className="field-input" placeholder="ej: María García" value={form.name} onChange={e=>setF("name",e.target.value)} />
                 </div>
                 <div>
                   <label className="field-label">Contacto <span className="req">*</span></label>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
                     <div className="contact-toggle">
-                      <button className={contactType==="email"?"active":""} onClick={()=>{setContactType("email");setF("contact","");}} disabled={uploading}>📧 Email</button>
-                      <button className={contactType==="phone"?"active":""} onClick={()=>{setContactType("phone");setF("contact","");}} disabled={uploading}>📱 Celular</button>
+                      <button className={contactType==="email"?"active":""} onClick={()=>{setContactType("email");setF("contact","");}}>📧 Email</button>
+                      <button className={contactType==="phone"?"active":""} onClick={()=>{setContactType("phone");setF("contact","");}}>📱 Celular</button>
                     </div>
                     <input
                       className="field-input"
@@ -431,28 +384,20 @@ export default function App() {
                       placeholder={contactType==="email" ? "nombre@ejemplo.com" : "+54 381 555-0000"}
                       value={form.contact}
                       onChange={e=>setF("contact",e.target.value)}
-                      disabled={uploading}
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Barra de progreso y acción */}
+            {/* Acción */}
             {uploading ? (
-              <div className="card" style={{ padding: "1.35rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.7rem" }}>
-                  <div style={{ fontSize: "0.68rem", color: "#38BDF8", letterSpacing: "0.1em" }}>
-                    {uploadStage} {uploadProgress}%
-                  </div>
-                  <button className="cancel-btn" onClick={cancelUpload}>✕ CANCELAR</button>
+              <div className="card" style={{ padding: "1.35rem", textAlign: "center" }}>
+                <div style={{ fontSize: "0.68rem", color: "#38BDF8", letterSpacing: "0.14em", marginBottom: "0.7rem" }}>
+                  {uploadProgress < 70 ? "SUBIENDO VIDEO..." : "GUARDANDO DATOS..."} {Math.round(uploadProgress)}%
                 </div>
-                <div className="progress-bar-outer">
-                  <div className="progress-bar-inner" style={{ width: `${uploadProgress}%` }} />
-                </div>
-                <div style={{ fontSize: "0.62rem", color: "#334155", marginTop: "0.5rem", textAlign: "center" }}>
-                  No cierres esta pestaña mientras se sube el video
-                </div>
+                <div className="progress-bar-outer"><div className="progress-bar-inner" style={{ width: `${uploadProgress}%` }} /></div>
+                <div style={{ fontSize: "0.62rem", color: "#334155", marginTop: "0.45rem" }}>No cierres esta pestaña</div>
               </div>
             ) : (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
@@ -474,13 +419,12 @@ export default function App() {
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1.1rem", letterSpacing: "0.06em", color: "#F1F5F9" }}>
                 VIDEOS ENVIADOS <span style={{ color: "#38BDF8" }}>{submissions.length}</span>
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
                 {Object.entries(STATUS_CONFIG).map(([key,{label,color,icon}])=>(
                   <span key={key} style={{ fontSize: "0.58rem", color, background: `${color}18`, border: `1px solid ${color}40`, padding: "0.12rem 0.45rem", borderRadius: 3 }}>
                     {icon} {label}: {submissions.filter(s=>s.status===key).length}
                   </span>
                 ))}
-                <button onClick={loadSubmissions} style={{ background: "none", border: "1px solid #1E3A5F", borderRadius: 3, color: "#475569", cursor: "pointer", fontSize: "0.58rem", padding: "0.12rem 0.5rem", fontFamily: "monospace" }}>↺ Actualizar</button>
               </div>
             </div>
 
@@ -497,13 +441,12 @@ export default function App() {
                   <div style={{ fontSize: 20, paddingTop: 2 }}>🎬</div>
                   <div style={{ flex: 1, minWidth: 160 }}>
                     <div style={{ fontSize: "0.8rem", color: "#CBD5E1", fontWeight: 700, marginBottom: 5 }}>{s.file_name}</div>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.6rem", marginBottom: 4 }}>
-                      <span style={{ fontSize: "0.63rem", color: "#475569" }}>📍 {s.department}</span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "0.65rem", marginBottom: 4 }}>
+                      <span style={{ fontSize: "0.63rem", color: "#475569" }}>📍 {s.department}, Tucumán</span>
                       <span style={{ fontSize: "0.63rem", color: "#475569" }}>🏘 {s.locality}</span>
                       <span style={{ fontSize: "0.63rem", color: "#475569" }}>📅 {s.event_date}</span>
                       <span style={{ fontSize: "0.63rem", color: "#475569" }}>🕐 {s.event_time?.slice(0,5)} hs</span>
-                      {mapLink && <a className="map-link" href={mapLink} target="_blank" rel="noreferrer">🗺 Ubicación ↗</a>}
-                      {s.file_path && <a className="video-link" href={s.file_path} target="_blank" rel="noreferrer">▶ Ver video ↗</a>}
+                      {mapLink && <a className="map-link" href={mapLink} target="_blank" rel="noreferrer">🗺 Ver ubicación ↗</a>}
                     </div>
                     <div style={{ fontSize: "0.63rem", color: "#334155" }}>
                       {isEmail ? "📧" : "📱"} {s.contact}
@@ -547,7 +490,7 @@ export default function App() {
             <div className="about-card">
               <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>FLUJO DE PROCESAMIENTO</div>
               {[
-                ["01","Ingesta y georreferenciación","El video se sube a Cloudinary y los metadatos se guardan en la base de datos. Con la hora y coordenadas GPS se realiza la corrección de perspectiva."],
+                ["01","Ingesta y georreferenciación","El video se descomprime en fotogramas. Con la hora y coordenadas GPS se realiza la corrección de perspectiva."],
                 ["02","Algoritmo de velocimetría","Se aplica PIV, LSPIV u Optical Flow para calcular vectores 2D de velocidad superficial."],
                 ["03","Post-proceso y validación","Se filtran vectores espurios y se calcula la velocidad media y máxima del flujo."],
                 ["04","Reporte de resultados","Mapa de vectores y velocidad superficial estimada (m/s) publicados en la plataforma."],
