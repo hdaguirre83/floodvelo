@@ -4,7 +4,7 @@ import App from './App.jsx'
 import Admin from './Admin.jsx'
 import MapaEventos from './MapaEventos.jsx'
 
-Const path = window.location.pathname
+const path = window.location.pathname
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
