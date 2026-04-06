@@ -45,224 +45,6 @@ const analyzeVideo = (file) =>
 
 const EMPTY_FORM = { name: "", dept: "Capital", locality: "", date: "", time: "", condition: "", camera: "", notes: "", contact: "", lat: "", lng: "" };
 
-// ══════════════════════════════════════════════════════════════════
-// ILUSTRACIONES SVG
-// ══════════════════════════════════════════════════════════════════
-
-const IlluCamaraFija = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    {/* Fondo */}
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Cielo */}
-    <rect x="0" y="0" width="220" height="80" fill="#0F172A" rx="8"/>
-    {/* Agua */}
-    <rect x="0" y="80" width="220" height="80" fill="#0C2340" rx="0"/>
-    <text x="110" y="120" textAnchor="middle" fill="#38BDF8" fontSize="10" opacity="0.5">superficie del agua</text>
-    {/* Puente */}
-    <rect x="0" y="72" width="220" height="12" fill="#1E3A5F"/>
-    <rect x="30" y="40" width="8" height="44" fill="#1E3A5F"/>
-    <rect x="180" y="40" width="8" height="44" fill="#1E3A5F"/>
-    {/* Trípode */}
-    <line x1="110" y1="30" x2="95" y2="55" stroke="#475569" strokeWidth="2"/>
-    <line x1="110" y1="30" x2="110" y2="55" stroke="#475569" strokeWidth="2"/>
-    <line x1="110" y1="30" x2="125" y2="55" stroke="#475569" strokeWidth="2"/>
-    {/* Cámara */}
-    <rect x="100" y="18" width="22" height="14" rx="3" fill="#38BDF8"/>
-    <circle cx="111" cy="25" r="4" fill="#0A0E1A"/>
-    <circle cx="111" cy="25" r="2" fill="#38BDF8" opacity="0.5"/>
-    {/* Puntos de control */}
-    <circle cx="30" cy="76" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1"/>
-    <text x="30" y="68" textAnchor="middle" fill="#F59E0B" fontSize="8">GCP1</text>
-    <circle cx="188" cy="76" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1"/>
-    <text x="188" y="68" textAnchor="middle" fill="#F59E0B" fontSize="8">GCP2</text>
-    <circle cx="50" cy="84" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1"/>
-    <text x="50" y="95" textAnchor="middle" fill="#F59E0B" fontSize="8">GCP3</text>
-    <circle cx="168" cy="84" r="4" fill="#F59E0B" stroke="#fff" strokeWidth="1"/>
-    <text x="168" y="95" textAnchor="middle" fill="#F59E0B" fontSize="8">GCP4</text>
-    {/* Check */}
-    <circle cx="200" cy="20" r="12" fill="rgba(16,185,129,0.2)" stroke="#10B981" strokeWidth="1.5"/>
-    <text x="200" y="25" textAnchor="middle" fill="#10B981" fontSize="14">✓</text>
-  </svg>
-);
-
-const IlluHorizontal = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Teléfono horizontal - correcto */}
-    <rect x="30" y="55" width="100" height="60" rx="6" fill="#1E3A5F" stroke="#10B981" strokeWidth="2"/>
-    <rect x="36" y="61" width="88" height="48" rx="3" fill="#0C2340"/>
-    {/* Agua en pantalla */}
-    <rect x="36" y="85" width="88" height="24" rx="0" fill="#0F3460" opacity="0.8"/>
-    <text x="80" y="100" textAnchor="middle" fill="#38BDF8" fontSize="7">vista completa del río</text>
-    {/* Botón */}
-    <circle cx="136" cy="85" r="3" fill="#38BDF8"/>
-    <text x="80" y="145" textAnchor="middle" fill="#10B981" fontSize="9">✅ HORIZONTAL — CORRECTO</text>
-
-    {/* Teléfono vertical - incorrecto */}
-    <rect x="155" y="40" width="42" height="75" rx="6" fill="#1E3A5F" stroke="#EF4444" strokeWidth="2"/>
-    <rect x="160" y="46" width="32" height="60" rx="3" fill="#0C2340"/>
-    <rect x="160" y="76" width="32" height="30" rx="0" fill="#0F3460" opacity="0.8"/>
-    <text x="176" y="93" textAnchor="middle" fill="#EF4444" fontSize="6">vista</text>
-    <text x="176" y="101" textAnchor="middle" fill="#EF4444" fontSize="6">recortada</text>
-    <circle cx="176" cy="123" r="3" fill="#38BDF8"/>
-    <text x="176" y="137" textAnchor="middle" fill="#EF4444" fontSize="8">❌ VERTICAL</text>
-  </svg>
-);
-
-const IlluSinZoom = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Vista sin zoom - correcto */}
-    <rect x="10" y="20" width="90" height="70" rx="4" fill="#0F172A" stroke="#10B981" strokeWidth="2"/>
-    <rect x="10" y="55" width="90" height="35" fill="#0C2340"/>
-    <text x="55" y="78" textAnchor="middle" fill="#38BDF8" fontSize="7">río completo visible</text>
-    {/* Orillas */}
-    <rect x="10" y="50" width="90" height="8" fill="#1E3A5F"/>
-    <rect x="10" y="86" width="90" height="4" fill="#1E3A5F"/>
-    {/* Referencias visibles */}
-    <rect x="15" y="38" width="4" height="20" fill="#475569"/>
-    <rect x="90" y="38" width="4" height="20" fill="#475569"/>
-    <text x="55" y="110" textAnchor="middle" fill="#10B981" fontSize="8">✅ SIN ZOOM — referencias visibles</text>
-
-    {/* Vista con zoom - incorrecto */}
-    <rect x="118" y="20" width="90" height="70" rx="4" fill="#0F172A" stroke="#EF4444" strokeWidth="2"/>
-    <rect x="118" y="20" width="90" height="70" fill="#0C2340"/>
-    <text x="163" y="58" textAnchor="middle" fill="#EF4444" fontSize="7">solo agua, sin</text>
-    <text x="163" y="68" textAnchor="middle" fill="#EF4444" fontSize="7">referencias fijas</text>
-    {/* Símbolo zoom */}
-    <circle cx="188" cy="28" r="8" fill="none" stroke="#EF4444" strokeWidth="1.5"/>
-    <line x1="194" y1="34" x2="200" y2="40" stroke="#EF4444" strokeWidth="2"/>
-    <text x="185" y="31" textAnchor="middle" fill="#EF4444" fontSize="8">🔍</text>
-    <text x="163" y="110" textAnchor="middle" fill="#EF4444" fontSize="8">❌ CON ZOOM — no procesable</text>
-  </svg>
-);
-
-const IlluSinPaneo = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Cámara fija */}
-    <rect x="20" y="20" width="80" height="55" rx="4" fill="#0F172A" stroke="#10B981" strokeWidth="2"/>
-    <rect x="20" y="45" width="80" height="30" fill="#0C2340"/>
-    <text x="60" y="64" textAnchor="middle" fill="#38BDF8" fontSize="7">imagen estática</text>
-    {/* Flecha estática */}
-    <line x1="60" y1="85" x2="60" y2="95" stroke="#10B981" strokeWidth="2"/>
-    <text x="60" y="107" textAnchor="middle" fill="#10B981" fontSize="8">✅ CÁMARA FIJA</text>
-    <text x="60" y="118" textAnchor="middle" fill="#64748B" fontSize="7">sin movimiento</text>
-
-    {/* Cámara con paneo */}
-    <rect x="118" y="20" width="80" height="55" rx="4" fill="#0F172A" stroke="#EF4444" strokeWidth="2"/>
-    <rect x="118" y="45" width="80" height="30" fill="#0C2340"/>
-    {/* Flechas de paneo */}
-    <line x1="128" y1="60" x2="118" y2="60" stroke="#EF4444" strokeWidth="2" markerEnd="url(#arr)"/>
-    <line x1="188" y1="60" x2="198" y2="60" stroke="#EF4444" strokeWidth="2"/>
-    <path d="M 118 55 Q 158 45 198 55" stroke="#EF4444" strokeWidth="1.5" fill="none" strokeDasharray="3,2"/>
-    <text x="158" y="38" textAnchor="middle" fill="#EF4444" fontSize="7">movimiento</text>
-    <text x="158" y="107" textAnchor="middle" fill="#EF4444" fontSize="8">❌ PANEO — inutilizable</text>
-    <text x="158" y="118" textAnchor="middle" fill="#64748B" fontSize="7">los algoritmos no pueden</text>
-    <text x="158" y="127" textAnchor="middle" fill="#64748B" fontSize="7">rastrear partículas</text>
-  </svg>
-);
-
-const IlluAngulo = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Vista desde arriba - correcto */}
-    <rect x="10" y="15" width="90" height="65" rx="4" fill="#0F172A" stroke="#10B981" strokeWidth="2"/>
-    {/* Río desde arriba */}
-    <rect x="15" y="35" width="80" height="30" fill="#0C2340"/>
-    <rect x="15" y="28" width="80" height="10" fill="#1E3A5F"/>
-    <rect x="15" y="62" width="80" height="8" fill="#1E3A5F"/>
-    {/* Flecha indicando ángulo */}
-    <line x1="55" y1="10" x2="55" y2="18" stroke="#10B981" strokeWidth="2"/>
-    <text x="55" y="8" textAnchor="middle" fill="#10B981" fontSize="7">90°</text>
-    <text x="55" y="95" textAnchor="middle" fill="#10B981" fontSize="8">✅ VISTA CENITAL</text>
-    <text x="55" y="106" textAnchor="middle" fill="#64748B" fontSize="7">máxima superficie visible</text>
-
-    {/* Vista lateral - no recomendado */}
-    <rect x="118" y="15" width="90" height="65" rx="4" fill="#0F172A" stroke="#F59E0B" strokeWidth="2"/>
-    {/* Perspectiva */}
-    <path d="M 118 70 L 208 70 L 190 45 L 136 45 Z" fill="#0C2340"/>
-    <path d="M 118 70 L 136 45 L 136 30 L 118 30 Z" fill="#1E3A5F"/>
-    <path d="M 190 45 L 208 45 L 208 30 L 190 30 Z" fill="#1E3A5F"/>
-    <text x="163" y="62" textAnchor="middle" fill="#F59E0B" fontSize="7">perspectiva</text>
-    <line x1="163" y1="10" x2="178" y2="28" stroke="#F59E0B" strokeWidth="1.5" strokeDasharray="3,2"/>
-    <text x="163" y="95" textAnchor="middle" fill="#F59E0B" fontSize="8">⚠️ VISTA LATERAL</text>
-    <text x="163" y="106" textAnchor="middle" fill="#64748B" fontSize="7">requiere ortorectificación</text>
-  </svg>
-);
-
-const IlluPuntosControl = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Vista desde puente */}
-    <rect x="10" y="10" width="200" height="110" rx="4" fill="#0F172A" stroke="#38BDF8" strokeWidth="1.5"/>
-    {/* Agua */}
-    <rect x="10" y="55" width="200" height="65" fill="#0C2340" rx="0"/>
-    {/* Orillas */}
-    <rect x="10" y="48" width="200" height="10" fill="#1E3A5F"/>
-    <rect x="10" y="112" width="200" height="8" fill="#1E3A5F"/>
-    {/* Pilares puente */}
-    <rect x="50" y="10" width="10" height="48" fill="#334155"/>
-    <rect x="160" y="10" width="10" height="48" fill="#334155"/>
-    {/* Puntos de control con coordenadas */}
-    <circle cx="50" cy="52" r="6" fill="#F59E0B" stroke="#fff" strokeWidth="1.5"/>
-    <text x="50" y="55" textAnchor="middle" fill="#0A0E1A" fontSize="7" fontWeight="bold">1</text>
-    <text x="50" y="42" textAnchor="middle" fill="#F59E0B" fontSize="6">-26.824°</text>
-
-    <circle cx="170" cy="52" r="6" fill="#F59E0B" stroke="#fff" strokeWidth="1.5"/>
-    <text x="170" y="55" textAnchor="middle" fill="#0A0E1A" fontSize="7" fontWeight="bold">2</text>
-    <text x="170" y="42" textAnchor="middle" fill="#F59E0B" fontSize="6">-26.824°</text>
-
-    <circle cx="40" cy="115" r="6" fill="#F59E0B" stroke="#fff" strokeWidth="1.5"/>
-    <text x="40" y="118" textAnchor="middle" fill="#0A0E1A" fontSize="7" fontWeight="bold">3</text>
-    <text x="40" y="130" textAnchor="middle" fill="#F59E0B" fontSize="6">-26.826°</text>
-
-    <circle cx="180" cy="115" r="6" fill="#F59E0B" stroke="#fff" strokeWidth="1.5"/>
-    <text x="180" y="118" textAnchor="middle" fill="#0A0E1A" fontSize="7" fontWeight="bold">4</text>
-    <text x="180" y="130" textAnchor="middle" fill="#F59E0B" fontSize="6">-26.826°</text>
-
-    {/* Líneas conectando puntos */}
-    <polygon points="50,52 170,52 180,115 40,115" fill="none" stroke="#F59E0B" strokeWidth="1" strokeDasharray="4,3" opacity="0.6"/>
-
-    <text x="110" y="148" textAnchor="middle" fill="#F59E0B" fontSize="8">4 puntos de control (GCPs) para ortorectificación</text>
-  </svg>
-);
-
-const IlluDuracion = () => (
-  <svg viewBox="0 0 220 160" xmlns="http://www.w3.org/2000/svg" style={{width:"100%",height:"auto"}}>
-    <rect width="220" height="160" fill="#0A0E1A" rx="8"/>
-    {/* Línea de tiempo */}
-    <line x1="20" y1="80" x2="200" y2="80" stroke="#1E293B" strokeWidth="3"/>
-    {/* Segmento rechazado */}
-    <line x1="20" y1="80" x2="70" y2="80" stroke="#EF4444" strokeWidth="4"/>
-    <text x="45" y="70" textAnchor="middle" fill="#EF4444" fontSize="9">❌ &lt;10 seg</text>
-    {/* Segmento mínimo */}
-    <line x1="70" y1="80" x2="110" y2="80" stroke="#F59E0B" strokeWidth="4"/>
-    <text x="90" y="70" textAnchor="middle" fill="#F59E0B" fontSize="9">⚠ 10-20 seg</text>
-    {/* Segmento ideal */}
-    <line x1="110" y1="80" x2="200" y2="80" stroke="#10B981" strokeWidth="4"/>
-    <text x="155" y="70" textAnchor="middle" fill="#10B981" fontSize="9">✅ 30-60 seg ideal</text>
-    {/* Marcadores */}
-    <line x1="70" y1="73" x2="70" y2="87" stroke="#F59E0B" strokeWidth="2"/>
-    <text x="70" y="97" textAnchor="middle" fill="#F59E0B" fontSize="8">10s</text>
-    <line x1="110" y1="73" x2="110" y2="87" stroke="#10B981" strokeWidth="2"/>
-    <text x="110" y="97" textAnchor="middle" fill="#10B981" fontSize="8">30s</text>
-    <line x1="200" y1="73" x2="200" y2="87" stroke="#64748B" strokeWidth="2"/>
-    <text x="200" y="97" textAnchor="middle" fill="#64748B" fontSize="8">60s</text>
-    {/* Explicación */}
-    <text x="110" y="120" textAnchor="middle" fill="#94A3B8" fontSize="8">Mayor duración = mejor promedio de velocidad</text>
-    <text x="110" y="132" textAnchor="middle" fill="#64748B" fontSize="7">Se analizan múltiples pares de fotogramas</text>
-    {/* Reloj */}
-    <circle cx="110" cy="40" r="18" fill="#0F172A" stroke="#38BDF8" strokeWidth="1.5"/>
-    <line x1="110" y1="40" x2="110" y2="28" stroke="#38BDF8" strokeWidth="2"/>
-    <line x1="110" y1="40" x2="120" y2="44" stroke="#38BDF8" strokeWidth="2"/>
-    <text x="110" y="44" textAnchor="middle" fill="#38BDF8" fontSize="8">⏱</text>
-  </svg>
-);
-
-// ══════════════════════════════════════════════════════════════════
-// APP PRINCIPAL
-// ══════════════════════════════════════════════════════════════════
 export default function App() {
   const [tab, setTab] = useState("upload");
   const [dragOver, setDragOver] = useState(false);
@@ -279,7 +61,7 @@ export default function App() {
   const [contactType, setContactType] = useState("email");
   const [qcResult, setQcResult] = useState(null);
   const [qcLoading, setQcLoading] = useState(false);
-  const [metodoTab, setMetodoTab] = useState("guia"); // guia | proceso | river
+  const [metodoTab, setMetodoTab] = useState("guia");
   const fileRef = useRef();
   const xhrRef = useRef(null);
 
@@ -388,7 +170,7 @@ export default function App() {
                 {formatDuration(duration)}
                 <span style={{ fontSize: "0.62rem", color: "#475569", fontWeight: 400, marginLeft: "0.5rem" }}>(mínimo {formatDuration(MIN_DURATION_SEC)})</span>
               </div>
-              {!durationOk && <div style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>El video es demasiado corto. Grabá al menos {MIN_DURATION_SEC} segundos para poder aplicar los algoritmos de velocimetría.</div>}
+              {!durationOk && <div style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>El video es demasiado corto. Grabá al menos {MIN_DURATION_SEC} segundos de flujo continuo.</div>}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "#0A0E1A", borderRadius: 6, padding: "0.6rem 0.85rem" }}>
@@ -399,14 +181,29 @@ export default function App() {
                 {width}x{height}px
                 <span style={{ fontSize: "0.62rem", color: "#475569", fontWeight: 400, marginLeft: "0.5rem" }}>(mínimo {MIN_WIDTH}x{MIN_HEIGHT}px — 720p)</span>
               </div>
-              {!resolutionOk && <div style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>La resolución es demasiado baja. Usá una cámara con resolución mínima de 720p (1280x720).</div>}
+              {!resolutionOk && <div style={{ fontSize: "0.65rem", color: "#94A3B8", marginTop: 2 }}>Resolución insuficiente. Usá una cámara con resolución mínima de 720p.</div>}
             </div>
           </div>
         </div>
-        {passed && <div style={{ marginTop: "0.75rem", fontSize: "0.63rem", color: "#475569", background: "#0A0E1A", borderRadius: 4, padding: "0.5rem 0.75rem" }}>ℹ️ El análisis de estabilidad de cámara se realizará durante el procesamiento con RIVeR.</div>}
+        {passed && <div style={{ marginTop: "0.75rem", fontSize: "0.63rem", color: "#475569", background: "#0A0E1A", borderRadius: 4, padding: "0.5rem 0.75rem" }}>ℹ️ La estabilidad de cámara se verificará durante el procesamiento con RIVeR (herramienta Unshake).</div>}
       </div>
     );
   };
+
+  // ── Componente de ítem de guía ─────────────────────────────────────────
+  const GuideItem = ({ icon, title, items, color = "#38BDF8" }) => (
+    <div style={{ background: "#0F172A", border: `1px solid ${color}25`, borderRadius: 8, padding: "1.1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.75rem" }}>
+        <span style={{ fontSize: 20 }}>{icon}</span>
+        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1rem", color, letterSpacing: "0.05em" }}>{title}</div>
+      </div>
+      <ul style={{ paddingLeft: "1.1rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+        {items.map((item, i) => (
+          <li key={i} style={{ fontSize: "0.72rem", color: "#94A3B8", lineHeight: 1.6 }}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
 
   return (
     <div style={{ fontFamily: "'Courier New', monospace", background: "#0A0E1A", minHeight: "100vh", color: "#E2E8F0" }}>
@@ -436,8 +233,7 @@ export default function App() {
         .geo-btn:hover:not(:disabled) { background: rgba(56,189,248,0.18); }
         .geo-btn:disabled { opacity: 0.45; cursor: not-allowed; }
         .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-        .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
-        @media (max-width: 580px) { .grid2,.grid3 { grid-template-columns: 1fr; } }
+        @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
         .scan-line { position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, transparent, #38BDF8, transparent); animation: scan 3s linear infinite; }
         @keyframes scan { 0%{top:0%} 100%{top:100%} }
         .pulse-dot { width: 8px; height: 8px; border-radius: 50%; background: #10B981; animation: pulse 1.5s ease-in-out infinite; display: inline-block; }
@@ -461,12 +257,8 @@ export default function App() {
         .section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; letter-spacing: 0.1em; font-size: 0.82rem; color: #64748B; margin-bottom: 1.1rem; border-bottom: 1px solid #1E293B; padding-bottom: 0.6rem; }
         a.map-link { color: #38BDF8; text-decoration: none; font-size: 0.63rem; }
         a.map-link:hover { text-decoration: underline; }
-        .guide-card { background: #0F172A; border: 1px solid #1E293B; border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-        .guide-card.ok { border-color: rgba(16,185,129,0.25); }
-        .guide-card.bad { border-color: rgba(239,68,68,0.25); }
-        .guide-card.warn { border-color: rgba(245,158,11,0.25); }
-        .guide-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.88rem; letter-spacing: 0.06em; }
-        .guide-desc { font-size: 0.68rem; color: #64748B; line-height: 1.6; }
+        .photo-caption { font-size: 0.63rem; color: #475569; text-align: center; margin-top: 0.4rem; font-style: italic; }
+        .tip-box { background: rgba(56,189,248,0.05); border: 1px solid rgba(56,189,248,0.2); border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.72rem; color: "#94A3B8"; line-height: 1.7; }
       `}</style>
 
       {/* HEADER */}
@@ -529,7 +321,10 @@ export default function App() {
                     Subí un video de inundación en Tucumán. Los algoritmos LSPIV de RIVeR estimarán la velocidad superficial del flujo.
                   </div>
                   <div style={{ marginTop: "0.5rem", fontSize: "0.65rem", color: "#334155" }}>
-                    ¿Primera vez? Consultá la <button onClick={()=>{setTab("about");setMetodoTab("guia");}} style={{ background:"none", border:"none", cursor:"pointer", color:"#38BDF8", fontSize:"0.65rem", padding:0, textDecoration:"underline" }}>Guía de Filmación</button> antes de grabar.
+                    ¿Primera vez? Consultá la{" "}
+                    <button onClick={()=>{setTab("about");setMetodoTab("guia");}} style={{ background:"none", border:"none", cursor:"pointer", color:"#38BDF8", fontSize:"0.65rem", padding:0, textDecoration:"underline" }}>
+                      Guía de Filmación
+                    </button>{" "}antes de grabar.
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
@@ -542,10 +337,10 @@ export default function App() {
             <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "0.85rem 1.1rem" }}>
               <div style={{ fontSize: "0.63rem", color: "#64748B", letterSpacing: "0.1em", marginBottom: "0.5rem", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700 }}>REQUISITOS MÍNIMOS DEL VIDEO</div>
               <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 10 seg</strong></span>
+                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 15-20 seg</strong></span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📐 Resolución: <strong style={{ color: "#CBD5E1" }}>mín. 720p</strong></span>
-                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>🔒 Cámara: <strong style={{ color: "#CBD5E1" }}>sin zoom ni paneo</strong></span>
-                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📍 GCPs: <strong style={{ color: "#CBD5E1" }}>4 puntos fijos visibles</strong></span>
+                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>🔒 Sin zoom ni paneo</span>
+                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📍 4 puntos fijos visibles</span>
               </div>
             </div>
 
@@ -675,7 +470,7 @@ export default function App() {
 
             {/* Sub-tabs */}
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-              {[["guia","🎥  Guía de Filmación"],["proceso","⚙️  Flujo de Procesamiento"],["river","🔬  RIVeR & LSPIV"]].map(([id,label])=>(
+              {[["guia","🎥  Cómo Filmar"],["proceso","⚙️  Procesamiento"],["river","🔬  RIVeR & LSPIV"]].map(([id,label])=>(
                 <button key={id} className={`sub-tab ${metodoTab===id?"active":""}`} onClick={()=>setMetodoTab(id)}>{label}</button>
               ))}
             </div>
@@ -684,112 +479,129 @@ export default function App() {
             {metodoTab === "guia" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
 
-                <div className="about-card" style={{ background: "rgba(56,189,248,0.04)", borderColor: "rgba(56,189,248,0.2)" }}>
-                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.4rem", color: "#38BDF8", marginBottom: "0.5rem" }}>GUÍA DE FILMACIÓN</div>
-                  <p style={{ fontSize: "0.75rem", color: "#94A3B8", lineHeight: 1.7 }}>
-                    La calidad del video determina directamente la precisión de los resultados de velocimetría. Seguí estas pautas para obtener videos procesables con RIVeR. Un video mal filmado no puede ser analizado, incluso si tiene buena resolución.
+                {/* Intro */}
+                <div className="about-card" style={{ borderColor: "rgba(56,189,248,0.2)" }}>
+                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.35rem", color: "#38BDF8", marginBottom: "0.5rem" }}>
+                    CÓMO FILMAR PARA QUE TU VIDEO SEA ÚTIL
+                  </div>
+                  <p style={{ fontSize: "0.75rem", color: "#94A3B8", lineHeight: 1.8 }}>
+                    Para que podamos medir la velocidad del agua con tecnología LSPIV, seguí estas recomendaciones. La calidad del video determina directamente la precisión de los resultados.
+                  </p>
+                  <div style={{ marginTop: "0.75rem", background: "rgba(56,189,248,0.06)", border: "1px solid rgba(56,189,248,0.15)", borderRadius: 6, padding: "0.6rem 0.9rem", fontSize: "0.7rem", color: "#38BDF8" }}>
+                    📌 <strong>Cuanto mejor sea el video, más precisa será la medición</strong>
+                  </div>
+                </div>
+
+                {/* Imagen de ejemplos buenos y malos */}
+                <div className="about-card">
+                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>
+                    EJEMPLOS DE ENCUADRES CORRECTOS E INCORRECTOS
+                  </div>
+                  <img
+                    src="/guia_ejemplos.png"
+                    alt="Ejemplos de videos correctos e incorrectos para velocimetría"
+                    style={{ width: "100%", borderRadius: 6, border: "1px solid #1E293B" }}
+                  />
+                  <p className="photo-caption">
+                    ✅ Correctos: vista desde puente con orillas visibles y referencias fijas · ❌ Incorrectos: zoom excesivo sin referencias y plano lateral bajo sin visibilidad del flujo. (Imágenes: A. Patalano)
                   </p>
                 </div>
 
-                {/* Grid de guías */}
+                {/* Grid de recomendaciones */}
                 <div className="grid2">
-
-                  {/* Cámara fija */}
-                  <div className="guide-card ok">
-                    <IlluCamaraFija />
-                    <div className="guide-title" style={{ color: "#10B981" }}>✅ CÁMARA FIJA CON TRÍPODE</div>
-                    <div className="guide-desc">
-                      Apoyá el teléfono en un trípode, parapeto de puente, o cualquier superficie estable. La cámara debe permanecer completamente inmóvil durante toda la grabación. Incluí 4 puntos de referencia fijos y visibles (GCPs) para la ortorectificación.
-                    </div>
-                  </div>
-
-                  {/* Modo horizontal */}
-                  <div className="guide-card ok">
-                    <IlluHorizontal />
-                    <div className="guide-title" style={{ color: "#10B981" }}>✅ MODO HORIZONTAL (PAISAJE)</div>
-                    <div className="guide-desc">
-                      Girá el teléfono horizontalmente antes de grabar. El modo horizontal captura una superficie de agua mucho mayor, lo que mejora significativamente la estimación de velocidades. El modo vertical recorta la imagen y reduce la utilidad del video.
-                    </div>
-                  </div>
-
-                  {/* Sin zoom */}
-                  <div className="guide-card bad">
-                    <IlluSinZoom />
-                    <div className="guide-title" style={{ color: "#EF4444" }}>❌ NO USAR ZOOM DIGITAL</div>
-                    <div className="guide-desc">
-                      El zoom digital degrada la calidad de imagen y elimina las referencias fijas necesarias para la ortorectificación. Si necesitás acercarte, hacelo físicamente. El video debe mostrar las dos orillas del río y puntos de control claramente visibles.
-                    </div>
-                  </div>
-
-                  {/* Sin paneo */}
-                  <div className="guide-card bad">
-                    <IlluSinPaneo />
-                    <div className="guide-title" style={{ color: "#EF4444" }}>❌ NO HACER PANEO</div>
-                    <div className="guide-desc">
-                      El paneo (mover la cámara de lado a lado) hace imposible rastrear las partículas en la superficie del agua. Los algoritmos LSPIV necesitan que los mismos puntos de referencia aparezcan en todos los fotogramas. Un video con paneo no puede ser procesado.
-                    </div>
-                  </div>
-
-                  {/* Ángulo */}
-                  <div className="guide-card warn">
-                    <IlluAngulo />
-                    <div className="guide-title" style={{ color: "#F59E0B" }}>⚠️ ÁNGULO DE FILMACIÓN</div>
-                    <div className="guide-desc">
-                      La vista cenital (desde arriba) es la ideal — maximiza la superficie de agua visible y simplifica el procesamiento. Si filmás desde una orilla con perspectiva lateral, RIVeR puede corregirlo mediante ortorectificación, pero necesitás marcar los 4 puntos de control (GCPs) con coordenadas reales.
-                    </div>
-                  </div>
-
-                  {/* Puntos de control */}
-                  <div className="guide-card warn">
-                    <IlluPuntosControl />
-                    <div className="guide-title" style={{ color: "#F59E0B" }}>📍 4 PUNTOS DE CONTROL (GCPs)</div>
-                    <div className="guide-desc">
-                      Para la ortorectificación se necesitan 4 puntos fijos y visibles en el video cuyas coordenadas GPS reales se conocen. Pueden ser esquinas de puentes, postes, rocas grandes o marcas en el pavimento. El equipo técnico los marcará en el panel de administración antes del procesamiento con RIVeR.
-                    </div>
-                  </div>
-
+                  <GuideItem
+                    icon="📍"
+                    title="1. POSICIÓN DE LA CÁMARA"
+                    color="#38BDF8"
+                    items={[
+                      "Filmá desde una posición elevada (puente, puente peatonal, orilla alta)",
+                      "Apuntá en ángulo oblicuo al flujo",
+                      "Ideal: cámara fija (apoyada o con pulso firme)",
+                      "Incluí la mayor superficie de agua posible (que se vean los extremos del flujo)",
+                    ]}
+                  />
+                  <GuideItem
+                    icon="🏗️"
+                    title="2. REFERENCIAS FIJAS EN EL CUADRO"
+                    color="#38BDF8"
+                    items={[
+                      "Asegurate que se vean objetos fijos en las orillas (árboles, postes, rocas, estructuras)",
+                      "Estos puntos nos permiten convertir píxeles a metros reales",
+                      "Identificá 4 puntos fijos no alineados que sean visibles durante todo el video",
+                    ]}
+                  />
+                  <GuideItem
+                    icon="⏱️"
+                    title="3. DURACIÓN Y ESTABILIDAD"
+                    color="#10B981"
+                    items={[
+                      "Filmá al menos 15-20 segundos de flujo continuo",
+                      "Mové la cámara lo menos posible",
+                      "Evitá paneos o zoom durante la filmación",
+                      "Más duración = mejor promedio de velocidad estimada",
+                    ]}
+                  />
+                  <GuideItem
+                    icon="💡"
+                    title="4. CONDICIONES IDEALES"
+                    color="#10B981"
+                    items={[
+                      "Superficie del agua con partículas visibles (espuma, hojas, sedimentos en suspensión)",
+                      "Evitá reflejos intensos del sol o contraluz directo",
+                      "Preferí luz natural diurna o con buena iluminación artificial",
+                      "Procurá buena iluminación (diurna o con luz artificial si existiese)",
+                    ]}
+                  />
                 </div>
 
-                {/* Duración recomendada */}
+                {/* Imagen puntos de control */}
                 <div className="about-card">
-                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>⏱ DURACIÓN RECOMENDADA</div>
-                  <IlluDuracion />
-                  <div style={{ marginTop: "0.75rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#EF4444", minWidth: 80 }}>❌ &lt; 10 seg</span>
-                      <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Insuficiente — el video será rechazado automáticamente</span>
-                    </div>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#F59E0B", minWidth: 80 }}>⚠ 10-30 seg</span>
-                      <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Aceptable — resultados básicos posibles</span>
-                    </div>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#10B981", minWidth: 80 }}>✅ 30-60 seg</span>
-                      <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Ideal — permite promediar múltiples estimaciones de velocidad</span>
-                    </div>
-                    <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                      <span style={{ fontSize: "0.75rem", color: "#38BDF8", minWidth: 80 }}>⭐ &gt; 60 seg</span>
-                      <span style={{ fontSize: "0.7rem", color: "#64748B" }}>Excelente — máxima precisión estadística</span>
-                    </div>
+                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>
+                    PUNTOS DE CONTROL (GCPs) PARA ORTORECTIFICACIÓN
                   </div>
+                  <img
+                    src="/guia_puntos_control.png"
+                    alt="Ejemplo de puntos de control en video de inundación urbana"
+                    style={{ width: "100%", borderRadius: 6, border: "1px solid #1E293B" }}
+                  />
+                  <p className="photo-caption">
+                    Los puntos rojos y celeste indican referencias fijas sobre la superficie del agua no alineadas entre sí — esquinas de veredas, bases de postes, desagües. El equipo técnico los marcará antes del procesamiento con RIVeR. (Imagen: H. Aguirre)
+                  </p>
                 </div>
 
-                {/* Resumen rápido */}
+                {/* Qué NO hacer */}
+                <GuideItem
+                  icon="🚫"
+                  title="5. QUÉ NO HACER"
+                  color="#EF4444"
+                  items={[
+                    "❌ No hacer paneo (mover la cámara de lado a lado)",
+                    "❌ No grabar en movimiento (caminando o desde un vehículo)",
+                    "❌ No enfocar solo el agua sin referencias fijas visibles",
+                    "❌ No usar zoom digital",
+                    "❌ No grabar con el sol de frente generando reflejos intensos",
+                    "❌ No cortar el video antes de los 15 segundos",
+                  ]}
+                />
+
+                {/* Checklist */}
                 <div className="about-card">
-                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>CHECKLIST ANTES DE GRABAR</div>
+                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>
+                    ✅ CHECKLIST ANTES DE GRABAR
+                  </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
                     {[
-                      ["✅","Teléfono en modo horizontal"],
-                      ["✅","Cámara apoyada o con trípode"],
-                      ["✅","Zoom desactivado"],
-                      ["✅","Al menos 4 puntos fijos visibles"],
-                      ["✅","Buena iluminación natural"],
-                      ["✅","30 segundos o más de grabación"],
-                      ["❌","No mover la cámara durante la grabación"],
-                      ["❌","No hacer paneo ni seguimiento"],
-                    ].map(([icon, text]) => (
-                      <div key={text} style={{ display: "flex", gap: "0.5rem", alignItems: "center", fontSize: "0.7rem", color: "#94A3B8" }}>
-                        <span style={{ fontSize: "0.9rem" }}>{icon}</span>{text}
+                      "Posición elevada con vista del flujo",
+                      "Cámara apoyada o muy firme",
+                      "Zoom desactivado",
+                      "Al menos 4 puntos fijos visibles en el encuadre",
+                      "Buena iluminación natural",
+                      "Mínimo 15-20 segundos de grabación",
+                      "Modo horizontal (paisaje)",
+                      "Partículas visibles en el agua (espuma, hojas)",
+                    ].map((text) => (
+                      <div key={text} style={{ display: "flex", gap: "0.5rem", alignItems: "flex-start", fontSize: "0.7rem", color: "#94A3B8", lineHeight: 1.5 }}>
+                        <span style={{ color: "#10B981", flexShrink: 0 }}>☐</span>{text}
                       </div>
                     ))}
                   </div>
@@ -800,26 +612,24 @@ export default function App() {
 
             {/* ── FLUJO DE PROCESAMIENTO ── */}
             {metodoTab === "proceso" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                <div className="about-card">
-                  <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>FLUJO COMPLETO DE PROCESAMIENTO</div>
-                  {[
-                    ["01","Control de calidad automático","Al seleccionar el video se verifica duración mínima (10 seg) y resolución mínima (720p) antes de permitir el envío. El botón de envío queda bloqueado si el video no cumple."],
-                    ["02","Ingesta y almacenamiento","El video se sube a Cloudinary y los metadatos (fecha, hora, coordenadas GPS, contacto) se guardan en la base de datos. Se envía una notificación automática al equipo técnico."],
-                    ["03","Revisión manual","El equipo técnico revisa el video en el panel de administración. Verifica estabilidad de cámara, visibilidad de GCPs y condiciones de filmación. Aprueba o rechaza el video."],
-                    ["04","Marcado de puntos de control (GCPs)","El técnico identifica y marca los 4 puntos de control en el video, registrando sus coordenadas GPS reales para la ortorectificación."],
-                    ["05","Procesamiento con RIVeR 2.5","El video se descarga y procesa localmente con RIVeR 2.5. Se aplica Unshake para corrección de movimiento residual, ortorectificación con los GCPs y análisis LSPIV para calcular los vectores de velocidad superficial."],
-                    ["06","Reporte de resultados","El técnico carga la velocidad estimada (m/s) en el panel admin. El resultado queda disponible en el mapa de eventos y se notifica al ciudadano que lo filmó."],
-                  ].map(([n,title,desc])=>(
-                    <div key={n} className="method-step">
-                      <span className="step-num">{n}</span>
-                      <div>
-                        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: "#CBD5E1", marginBottom: 3 }}>{title}</div>
-                        <div style={{ fontSize: "0.7rem", color: "#64748B", lineHeight: 1.7 }}>{desc}</div>
-                      </div>
+              <div className="about-card">
+                <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>FLUJO COMPLETO DE PROCESAMIENTO</div>
+                {[
+                  ["01","Control de calidad automático","Al seleccionar el video se verifica duración mínima y resolución mínima (720p) antes de permitir el envío. El botón queda bloqueado si el video no cumple los requisitos."],
+                  ["02","Ingesta y almacenamiento","El video se sube a la nube y los metadatos (fecha, hora, coordenadas GPS, contacto) se guardan en la base de datos. Se envía una notificación automática al equipo técnico."],
+                  ["03","Revisión manual","El equipo técnico revisa el video en el panel de administración. Verifica estabilidad de cámara, visibilidad de GCPs y condiciones de filmación. Aprueba o rechaza el video."],
+                  ["04","Marcado de puntos de control (GCPs)","El técnico identifica y marca los 4 puntos de control en el video, registrando sus coordenadas GPS reales para la ortorectificación."],
+                  ["05","Procesamiento con RIVeR 2.5","El video se procesa localmente con RIVeR 2.5. Se aplica Unshake para corrección de movimiento residual, ortorectificación con los GCPs y análisis LSPIV para calcular los vectores de velocidad superficial."],
+                  ["06","Reporte de resultados","El técnico carga la velocidad estimada (m/s) en el panel admin. El resultado queda disponible en el mapa de eventos y se puede notificar al ciudadano que filmó el video."],
+                ].map(([n,title,desc])=>(
+                  <div key={n} className="method-step">
+                    <span className="step-num">{n}</span>
+                    <div>
+                      <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.92rem", color: "#CBD5E1", marginBottom: 3 }}>{title}</div>
+                      <div style={{ fontSize: "0.7rem", color: "#64748B", lineHeight: 1.7 }}>{desc}</div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -836,7 +646,7 @@ export default function App() {
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>CARACTERÍSTICAS PRINCIPALES</div>
                   {[
                     ["🎯","LSPIV (Large Scale PIV)","Implementa correlación cruzada entre ventanas de interrogación para rastrear patrones naturales en la superficie del agua (espuma, sedimentos, turbulencias)."],
-                    ["🔧","Unshake","Herramienta exclusiva de RIVeR 2.5 que corrige el movimiento residual de cámara antes del análisis, mejorando significativamente los resultados en videos tomados sin trípode."],
+                    ["🔧","Unshake","Herramienta exclusiva de RIVeR 2.5 que corrige el movimiento residual de cámara antes del análisis, mejorando los resultados en videos tomados sin trípode."],
                     ["📐","Ortorectificación","Corrige la perspectiva del video usando los 4 puntos de control (GCPs) con coordenadas reales, transformando la imagen oblicua en una vista cenital métrica."],
                     ["📊","Análisis estadístico","Genera campos vectoriales de velocidad, histogramas, perfiles transversales y estadísticas de velocidad media y máxima."],
                   ].map(([icon,title,desc])=>(
