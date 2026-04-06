@@ -58,7 +58,7 @@ export default function MapaEventos() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        .leaflet-container { background: #0F172A; }
+        .leaflet-container { background: #E2E8F0; }
         .custom-popup .leaflet-popup-content-wrapper { background: #0F172A; border: 1px solid #1E293B; border-radius: 8px; color: #E2E8F0; font-family: 'Courier New', monospace; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
         .custom-popup .leaflet-popup-tip { background: #0F172A; }
         .custom-popup .leaflet-popup-close-button { color: #475569; }
@@ -118,7 +118,7 @@ export default function MapaEventos() {
               style={{ height: "100%", width: "100%" }}
             >
               <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
                 attribution='&copy; <a href="https://carto.com/">CARTO</a>'
               />
               {withCoords.map(s => (
