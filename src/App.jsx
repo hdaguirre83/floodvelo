@@ -616,7 +616,7 @@ export default function App() {
                 <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#64748B", marginBottom: "0.85rem" }}>FLUJO COMPLETO DE PROCESAMIENTO</div>
                 {[
                   ["01","Control de calidad automático","Al seleccionar el video se verifica duración mínima y resolución mínima (720p) antes de permitir el envío. El botón queda bloqueado si el video no cumple los requisitos."],
-                  ["02","Ingesta y almacenamiento","El video se sube a la nube y los metadatos (fecha, hora, coordenadas GPS, contacto) se guardan en la base de datos. Se envía una notificación automática al equipo técnico."],
+                  ["02","Carga y almacenamiento","El video se sube a la nube y los metadatos (fecha, hora, coordenadas GPS, contacto) se guardan en la base de datos. Se envía una notificación automática al equipo técnico."],
                   ["03","Revisión manual","El equipo técnico revisa el video en el panel de administración. Verifica estabilidad de cámara, visibilidad de GCPs y condiciones de filmación. Aprueba o rechaza el video."],
                   ["04","Marcado de puntos de control (GCPs)","El técnico identifica y marca los 4 puntos de control en el video, registrando sus coordenadas GPS reales para la ortorectificación."],
                   ["05","Procesamiento con RIVeR 2.5","El video se procesa localmente con RIVeR 2.5. Se aplica Unshake para corrección de movimiento residual, ortorectificación con los GCPs y análisis LSPIV para calcular los vectores de velocidad superficial."],
