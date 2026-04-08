@@ -116,6 +116,9 @@ export default function App() {
   const [qcResult, setQcResult] = useState(null);
   const [qcLoading, setQcLoading] = useState(false);
   const [metodoTab, setMetodoTab] = useState("guia");
+  const [userSubmissions, setUserSubmissions] = useState([]);
+  const [loadingSubs, setLoadingSubs] = useState(false);
+  const [subsError, setSubsError] = useState("");
   const fileRef = useRef();
   const xhrRef = useRef(null);
 
@@ -135,6 +138,12 @@ export default function App() {
   useEffect(() => {
     return () => { if (preview) URL.revokeObjectURL(preview); };
   }, [preview]);
+
+  useEffect(() => {
+  if (tab === "misvideos" && user) {
+    loadUserSubmissions();
+  }
+}, [tab, user, loadUserSubmissions]);
 
   const handleDrop = useCallback((e) => {
     e.preventDefault(); setDragOver(false);
@@ -257,6 +266,26 @@ export default function App() {
     setError("Subida cancelada.");
   };
 
+ const loadUserSubmissions = useCallback(async () => {
+   if (!user) return;
+   setLoadingSubs(true);
+   setSubsError("");
+   try {
+     const { data, error } = await supabase
+       .from("submissions")
+       .select("id, event_date, locality, status, velocity_ms, file_path")
+       .eq("user_id", user.id)
+       .order("created_at", { ascending: false });
+     if (error) throw error;
+     setUserSubmissions(data || []);
+   } catch (err) {
+     console.error(err);
+     setSubsError("No se pudieron cargar tus aportes. Intentalo más tarde.");
+   } finally {
+     setLoadingSubs(false);
+   }
+ }, [user]);
+
   const QCPanel = () => {
     if (qcLoading) return (
       <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -353,10 +382,13 @@ export default function App() {
       </header>
 
       {/* Tabs */}
-      <div style={{ borderBottom: "1px solid #1E293B", padding: "0 1.5rem", display: "flex" }}>
-        <button className={`tab-btn ${tab==="upload"?"active":""}`} onClick={()=>setTab("upload")}>📤 Subir Video</button>
-        <button className={`tab-btn ${tab==="about"?"active":""}`} onClick={()=>setTab("about")}>🔬 Metodología</button>
-      </div>
+      <div style={{ borderBottom: "1px solid #1E293B", padding: "0 1.5rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+  <button className={`tab-btn ${tab === "upload" ? "active" : ""}`} onClick={() => setTab("upload")}>📤 Subir Video</button>
+  <button className={`tab-btn ${tab === "about" ? "active" : ""}`} onClick={() => setTab("about")}>🔬 Metodología</button>
+  {user && (
+    <button className={`tab-btn ${tab === "misvideos" ? "active" : ""}`} onClick={() => setTab("misvideos")}>📁 Mis Videos</button>
+  )}
+</div>
 
       <main style={{ maxWidth: 900, margin: "0 auto", padding: "1.75rem 1.5rem" }}>
         {tab === "upload" && (
@@ -405,6 +437,65 @@ export default function App() {
           // ... tu contenido de metodología sin cambios ...
           <div>Metodología (sin cambios)</div>
         )}
+        {tab === "misvideos" && (
+  <div style={{ display: "flex", flexDirection: "column", gap: "1.3rem" }}>
+    <div className="card" style={{ padding: "1.35rem" }}>
+      <div className="section-title">📹 TUS APORTES</div>
+      {loadingSubs && <div style={{ textAlign: "center", padding: "2rem" }}>⏳ Cargando tus videos...</div>}
+      {subsError && <div style={{ color: "#EF4444", fontSize: "0.75rem" }}>{subsError}</div>}
+      {!loadingSubs && !subsError && userSubmissions.length === 0 && (
+        <div style={{ textAlign: "center", padding: "2rem", color: "#64748B" }}>
+          Aún no subiste ningún video. 🌊 ¡Animate a contribuir!
+        </div>
+      )}
+      {userSubmissions.length > 0 && (
+        <div style={{ overflowX: "auto" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }}>
+            <thead>
+              <tr style={{ borderBottom: "1px solid #1E293B", color: "#64748B", textAlign: "left" }}>
+                <th style={{ padding: "0.5rem 0.2rem" }}>Fecha</th>
+                <th style={{ padding: "0.5rem 0.2rem" }}>Localidad</th>
+                <th style={{ padding: "0.5rem 0.2rem" }}>Estado</th>
+                <th style={{ padding: "0.5rem 0.2rem" }}>Velocidad (m/s)</th>
+                <th style={{ padding: "0.5rem 0.2rem" }}>Video</th>
+              </tr>
+            </thead>
+            <tbody>
+              {userSubmissions.map(sub => (
+                <tr key={sub.id} style={{ borderBottom: "1px solid #1E293B" }}>
+                  <td style={{ padding: "0.6rem 0.2rem" }}>{sub.event_date || "—"}</td>
+                  <td style={{ padding: "0.6rem 0.2rem" }}>{sub.locality || "—"}</td>
+                  <td style={{ padding: "0.6rem 0.2rem" }}>
+                    <span style={{
+                      background: sub.status === "approved" ? "rgba(16,185,129,0.2)" : sub.status === "rejected" ? "rgba(239,68,68,0.2)" : "rgba(245,158,11,0.2)",
+                      color: sub.status === "approved" ? "#10B981" : sub.status === "rejected" ? "#EF4444" : "#F59E0B",
+                      padding: "0.1rem 0.4rem",
+                      borderRadius: "3px",
+                      fontSize: "0.6rem",
+                      textTransform: "uppercase"
+                    }}>
+                      {sub.status === "approved" ? "Aprobado" : sub.status === "rejected" ? "Rechazado" : "Pendiente"}
+                    </span>
+                  </td>
+                  <td style={{ padding: "0.6rem 0.2rem" }}>
+                    {sub.velocity_ms ? `${sub.velocity_ms} m/s` : "—"}
+                  </td>
+                  <td style={{ padding: "0.6rem 0.2rem" }}>
+                    {sub.file_path && (
+                      <a href={sub.file_path} target="_blank" rel="noopener noreferrer" style={{ color: "#38BDF8", textDecoration: "none" }}>
+                        Ver ▶
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  </div>
+)}
       </main>
     </div>
   );
