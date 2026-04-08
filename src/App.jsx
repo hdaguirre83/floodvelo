@@ -126,21 +126,20 @@ export default function App() {
     );
   };
 
-  const formValid = () => {
-  console.log("=== VALIDACIÓN ===");
-  console.log("selectedFile:", selectedFile);
-  console.log("qcResult:", qcResult);
-  console.log("qcResult?.passed:", qcResult?.passed);
-  console.log("form.date:", form.date, "form.time:", form.time, "form.locality:", form.locality);
-  console.log("form.lat:", form.lat, "form.lng:", form.lng);
-  
-  if (!selectedFile || !qcResult?.passed) return false;
-  if (!form.date || !form.time || !form.locality) return false;
-  if (form.lat && isNaN(parseFloat(form.lat))) return false;
-  if (form.lng && isNaN(parseFloat(form.lng))) return false;
-  
-  console.log("✅ TODAS LAS CONDICIONES SON TRUE");
-  return true;
+const getFormValidationError = () => {
+  if (!selectedFile) return "📹 Seleccioná un video primero.";
+  if (!qcResult) return "⏳ Analizando calidad del video...";
+  if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥15s, resolución ≥720p).";
+  if (!form.date) return "📅 Completá la fecha del evento.";
+  if (!form.time) return "⏰ Completá la hora de la captura.";
+  if (!form.locality) return "📍 Completá la localidad / barrio.";
+  if (form.lat && isNaN(parseFloat(form.lat))) return "🌐 La latitud debe ser un número válido (ej. -26.8241).";
+  if (form.lng && isNaN(parseFloat(form.lng))) return "🌐 La longitud debe ser un número válido (ej. -65.2226).";
+  return null; // null = sin errores
+};
+
+const formValid = () => {
+  return getFormValidationError() === null;
 };
 
   const handleUpload = async () => {
@@ -539,6 +538,12 @@ export default function App() {
                 <div style={{ fontSize: "0.64rem", color: "#334155" }}><span className="req">*</span> Obligatorio: video aprobado · fecha · hora · localidad</div>
                 <button className="upload-btn" disabled={!formValid()} onClick={handleUpload}>ENVIAR PARA ANÁLISIS →</button>
               </div>
+              {/* Mostrar el error si existe */}
+{getFormValidationError() && (
+  <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, padding: "0.5rem", fontSize: "0.7rem", color: "#EF4444", textAlign: "center" }}>
+    {getFormValidationError()}
+  </div>
+)}
             )}
             {/* ----- FIN BLOQUE UPLOAD ----- */}
           </div>
