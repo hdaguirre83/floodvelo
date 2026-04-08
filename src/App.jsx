@@ -70,6 +70,47 @@ const handleGoogleLogin = async () => {
   });
   if (error) console.error("Error en login:", error);
 };
+// ========== 👇 AGREGAR AQUÍ EL COMPONENTE LoginScreen ==========
+const LoginScreen = () => (
+  <div style={{
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: '100vh',
+    background: '#0A0E1A',
+    color: '#E2E8F0',
+    padding: '2rem',
+    textAlign: 'center'
+  }}>
+    <div style={{ marginBottom: '2rem' }}>
+      <div style={{ fontSize: '4rem' }}>🌊</div>
+      <h1 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '2.5rem', marginTop: '1rem' }}>FloodVelo</h1>
+      <p style={{ color: '#94A3B8', marginTop: '0.5rem' }}>Ciencia ciudadana para inundaciones</p>
+    </div>
+    <button
+      onClick={handleGoogleLogin}
+      style={{
+        background: '#0EA5E9',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontFamily: "'Space Mono', monospace",
+        fontSize: '1rem',
+        padding: '0.75rem 1.5rem',
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem'
+      }}
+    >
+      🔑 Iniciar sesión con Google
+    </button>
+    <p style={{ fontSize: '0.75rem', color: '#64748B', marginTop: '2rem', maxWidth: '300px' }}>
+      Necesitas iniciar sesión para contribuir con videos y acceder a tus aportes.
+    </p>
+  </div>
+);
 
 export default function App() {
   const [tab, setTab] = useState("upload");
