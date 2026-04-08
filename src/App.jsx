@@ -127,12 +127,21 @@ export default function App() {
   };
 
   const formValid = () => {
-    if (!selectedFile || !qcResult?.passed) return false;
-    if (!form.date || !form.time || !form.locality) return false;
-    if (form.lat && isNaN(parseFloat(form.lat))) return false;
-    if (form.lng && isNaN(parseFloat(form.lng))) return false;
-    return true;
-  };
+  console.log("=== VALIDACIÓN ===");
+  console.log("selectedFile:", selectedFile);
+  console.log("qcResult:", qcResult);
+  console.log("qcResult?.passed:", qcResult?.passed);
+  console.log("form.date:", form.date, "form.time:", form.time, "form.locality:", form.locality);
+  console.log("form.lat:", form.lat, "form.lng:", form.lng);
+  
+  if (!selectedFile || !qcResult?.passed) return false;
+  if (!form.date || !form.time || !form.locality) return false;
+  if (form.lat && isNaN(parseFloat(form.lat))) return false;
+  if (form.lng && isNaN(parseFloat(form.lng))) return false;
+  
+  console.log("✅ TODAS LAS CONDICIONES SON TRUE");
+  return true;
+};
 
   const handleUpload = async () => {
     if (!formValid()) return;
