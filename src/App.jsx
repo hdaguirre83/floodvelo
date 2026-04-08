@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
 // ── Cloudinary config ──────────────────────────────────────────────────────
@@ -73,6 +73,8 @@ const handleGoogleLogin = async () => {
 
 export default function App() {
   const [tab, setTab] = useState("upload");
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [dragOver, setDragOver] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -91,6 +93,21 @@ export default function App() {
   const fileRef = useRef();
   const xhrRef = useRef(null);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+  
   const handleDrop = useCallback((e) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
@@ -298,10 +315,32 @@ export default function App() {
             <div style={{ fontSize: "0.58rem", letterSpacing: "0.16em", color: "#38BDF8", textTransform: "uppercase" }}>Velocimetría por imágenes · Tucumán, Argentina</div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-          <span className="pulse-dot" />
-          <span style={{ fontSize: "0.62rem", color: "#64748B", letterSpacing: "0.1em" }}>SISTEMA ACTIVO</span>
-        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+  {!authLoading && (
+    user ? (
+      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+        <span style={{ fontSize: "0.65rem", color: "#38BDF8" }}>
+          👤 {user.email}
+        </span>
+        <button
+          onClick={() => supabase.auth.signOut()}
+          style={{ background: "none", border: "1px solid #475569", borderRadius: "4px", color: "#94A3B8", fontSize: "0.6rem", padding: "0.2rem 0.6rem", cursor: "pointer" }}
+        >
+          Salir
+        </button>
+      </div>
+    ) : (
+      <button
+        onClick={handleGoogleLogin}
+        style={{ background: "rgba(56,189,248,0.1)", border: "1px solid rgba(56,189,248,0.3)", borderRadius: "4px", color: "#38BDF8", fontSize: "0.65rem", padding: "0.3rem 0.8rem", cursor: "pointer", fontFamily: "'Space Mono', monospace" }}
+      >
+        🔑 Login con Google
+      </button>
+    )
+  )}
+  <span className="pulse-dot" />
+  <span style={{ fontSize: "0.62rem", color: "#64748B", letterSpacing: "0.1em" }}>SISTEMA ACTIVO</span>
+</div>
       </header>
 
       {/* TABS */}
