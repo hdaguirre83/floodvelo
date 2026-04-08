@@ -250,11 +250,7 @@ export default function App() {
         <div style={{ fontSize: "0.72rem", color: "#64748B" }}>ANALIZANDO CALIDAD DEL VIDEO...</div>
       </div>
     );
-    if (!qcResult) return (
-      <div style={{ background: "#0F172A", border: "1px solid #EF4444", borderRadius: 8, padding: "1rem" }}>
-        <div style={{ fontSize: "0.72rem", color: "#EF4444" }}>❌ No se pudo analizar el video. Probá con otro formato (MP4, MOV).</div>
-      </div>
-    );
+    if (!qcResult) return null;
     const { duration, width, height, durationOk, resolutionOk, passed } = qcResult;
     return (
       <div style={{ background: passed ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${passed ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 8, padding: "1rem" }}>
@@ -452,7 +448,7 @@ export default function App() {
                 </>
               )}
             </div>
-            <QCPanel />
+            {selectedFile && <QCPanel />}
             <div className="card" style={{ padding: "1.35rem" }}>
               <div className="section-title">📅 CUÁNDO Y DÓNDE OCURRIÓ</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
