@@ -11,7 +11,6 @@ const VIDEO_CONDITIONS = ["Diurno - cielo despejado","Diurno - nublado","Diurno 
 const CAMERA_TYPES = ["Smartphone (frontal)","Smartphone (trasera)","Drone / UAV","Cámara fija instalada","Cámara de acción (GoPro, etc.)","Otro"];
 const TUCUMAN_DEPTS = ["Capital","Burruyacú","Cruz Alta","Chicligasta","Famaillá","Graneros","Juan B. Alberdi","La Cocha","Leales","Lules","Monteros","Río Chico","Simoca","Tafí del Valle","Tafí Viejo","Trancas","Yerba Buena"];
 
-// ── Control de calidad ─────────────────────────────────────────────────────
 const MIN_DURATION_SEC = 15;
 const MIN_WIDTH = 1280;
 const MIN_HEIGHT = 720;
@@ -100,6 +99,21 @@ export default function App() {
     return () => { if (preview) URL.revokeObjectURL(preview); };
   }, [preview]);
 
+  // --- Validación del formulario con mensajes
+  const getFormValidationError = () => {
+    if (!selectedFile) return "📹 Seleccioná un video primero.";
+    if (!qcResult) return "⏳ Analizando calidad del video...";
+    if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥15s, resolución ≥720p).";
+    if (!form.date) return "📅 Completá la fecha del evento.";
+    if (!form.time) return "⏰ Completá la hora de la captura.";
+    if (!form.locality) return "📍 Completá la localidad / barrio.";
+    if (form.lat && isNaN(parseFloat(form.lat))) return "🌐 La latitud debe ser un número válido (ej. -26.8241).";
+    if (form.lng && isNaN(parseFloat(form.lng))) return "🌐 La longitud debe ser un número válido (ej. -65.2226).";
+    return null;
+  };
+
+  const formValid = () => getFormValidationError() === null;
+
   const handleDrop = useCallback((e) => {
     e.preventDefault(); setDragOver(false);
     const file = e.dataTransfer.files[0];
@@ -126,25 +140,10 @@ export default function App() {
     );
   };
 
-const getFormValidationError = () => {
-  if (!selectedFile) return "📹 Seleccioná un video primero.";
-  if (!qcResult) return "⏳ Analizando calidad del video...";
-  if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥15s, resolución ≥720p).";
-  if (!form.date) return "📅 Completá la fecha del evento.";
-  if (!form.time) return "⏰ Completá la hora de la captura.";
-  if (!form.locality) return "📍 Completá la localidad / barrio.";
-  if (form.lat && isNaN(parseFloat(form.lat))) return "🌐 La latitud debe ser un número válido (ej. -26.8241).";
-  if (form.lng && isNaN(parseFloat(form.lng))) return "🌐 La longitud debe ser un número válido (ej. -65.2226).";
-  return null; // null = sin errores
-};
-
-const formValid = () => {
-  return getFormValidationError() === null;
-};
-
   const handleUpload = async () => {
     if (!formValid()) return;
     if (!user) { setError("Debes iniciar sesión para subir videos."); return; }
+
     setUploading(true); setUploadProgress(0); setUploadStage("Subiendo video a Cloudinary..."); setError("");
 
     const formData = new FormData();
@@ -249,7 +248,7 @@ const formValid = () => {
 
   useEffect(() => {
     if (tab === "misvideos" && user) loadUserSubmissions();
-  }, [tab, user, loadUserSubmissions]);
+  }, [tab, user]);
 
   const QCPanel = () => {
     if (qcLoading) return (
@@ -316,7 +315,7 @@ const formValid = () => {
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Barlow+Condensed:wght@300;500;700;900&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: #0A0E1A; } ::-webkit-scrollbar-thumb { background: #1E3A5F; border-radius: 3px; }
-        .nav-btn { background: transparent; border: none; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: bold; letter-spacing: 0.05em; padding: 0.6rem 1.2rem; transition: all 0.2s; color: white; border-bottom: 2px solid transparent; }
+        .nav-btn { background: transparent; border: none; cursor: pointer; font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: bold; letter-spacing: 0.05em; padding: 0.6rem 1.2rem; transition: all 0.2s; color: white; border-bottom: 2px solid transparent; }
         .nav-btn.active { color: #38BDF8; border-bottom-color: #38BDF8; }
         .nav-btn:hover:not(.active) { color: #94A3B8; background: rgba(255,255,255,0.05); border-radius: 4px; }
         .user-email { font-size: 0.8rem; color: #94A3B8; margin-right: 1rem; }
@@ -358,7 +357,6 @@ const formValid = () => {
         a:hover { text-decoration: underline; }
       `}</style>
 
-      {/* HEADER */}
       <header style={{ borderBottom: "1px solid #1E293B", padding: "0.8rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
         <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           {!user ? (
@@ -386,9 +384,6 @@ const formValid = () => {
       <main style={{ maxWidth: 1000, margin: "0 auto", padding: "1.75rem 1.5rem" }}>
         {tab === "upload" && user && (
           <div style={{ display: "flex", flexDirection: "column", gap: "1.3rem" }}>
-            {/* mismo contenido de subida que ya tenías, lo copio resumido para no alargar, pero es idéntico al original */}
-            {/* (He mantenido todo el código de upload, pero por brevedad aquí pongo un marcador; tú ya tienes ese código) */}
-            {/* ----- INICIO BLOQUE UPLOAD (igual que antes) ----- */}
             {success && (
               <div style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 8, padding: "0.9rem 1.2rem", display: "flex", gap: "0.75rem", alignItems: "center" }}>
                 <span style={{ fontSize: 20 }}>✅</span>
@@ -534,18 +529,18 @@ const formValid = () => {
                 <div style={{ fontSize: "0.62rem", color: "#334155", marginTop: "0.5rem", textAlign: "center" }}>No cierres esta pestaña mientras se sube el video</div>
               </div>
             ) : (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
-                <div style={{ fontSize: "0.64rem", color: "#334155" }}><span className="req">*</span> Obligatorio: video aprobado · fecha · hora · localidad</div>
-                <button className="upload-btn" disabled={!formValid()} onClick={handleUpload}>ENVIAR PARA ANÁLISIS →</button>
-              </div>
-              {/* Mostrar el error si existe */}
-{getFormValidationError() && (
-  <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, padding: "0.5rem", fontSize: "0.7rem", color: "#EF4444", textAlign: "center" }}>
-    {getFormValidationError()}
-  </div>
-)}
+              <>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+                  <div style={{ fontSize: "0.64rem", color: "#334155" }}><span className="req">*</span> Obligatorio: video aprobado · fecha · hora · localidad</div>
+                  <button className="upload-btn" disabled={!formValid()} onClick={handleUpload}>ENVIAR PARA ANÁLISIS →</button>
+                </div>
+                {getFormValidationError() && (
+                  <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, padding: "0.5rem", fontSize: "0.7rem", color: "#EF4444", textAlign: "center" }}>
+                    {getFormValidationError()}
+                  </div>
+                )}
+              </>
             )}
-            {/* ----- FIN BLOQUE UPLOAD ----- */}
           </div>
         )}
 
@@ -556,10 +551,8 @@ const formValid = () => {
                 <button key={id} className={`sub-tab ${metodoTab===id?"active":""}`} onClick={()=>setMetodoTab(id)}>{label}</button>
               ))}
             </div>
-
             {metodoTab === "guia" && (
               <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                {/* Contenido de la guía (igual que antes, no lo modifico) */}
                 <div className="about-card" style={{ borderColor: "rgba(56,189,248,0.2)" }}>
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.35rem", color: "#38BDF8", marginBottom: "0.5rem" }}>
                     CÓMO FILMAR PARA QUE TU VIDEO SEA ÚTIL
@@ -587,7 +580,6 @@ const formValid = () => {
                 <GuideItem icon="🚫" title="5. QUÉ NO HACER" color="#EF4444" items={["❌ No hacer paneo","❌ No grabar en movimiento","❌ Sin referencias fijas","❌ Zoom digital","❌ Menos de 15 segundos"]} />
               </div>
             )}
-
             {metodoTab === "proceso" && (
               <div className="about-card">
                 <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.9rem", letterSpacing: "0.1em", color: "#ffffff", marginBottom: "0.85rem" }}>FLUJO COMPLETO DE PROCESAMIENTO</div>
@@ -606,7 +598,6 @@ const formValid = () => {
                 ))}
               </div>
             )}
-
             {metodoTab === "cazadores" && (
               <div className="about-card">
                 <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.5rem", color: "#38BDF8", marginBottom: "1rem" }}>
@@ -642,9 +633,15 @@ const formValid = () => {
               {userSubmissions.length > 0 && (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.7rem" }}>
-                    <thead><tr style={{ borderBottom: "1px solid #1E293B", color: "#64748B", textAlign: "left" }}>
-                      <th style={{ padding: "0.5rem 0.2rem" }}>Fecha evento</th><th style={{ padding: "0.5rem 0.2rem" }}>Localidad</th><th style={{ padding: "0.5rem 0.2rem" }}>Estado</th><th style={{ padding: "0.5rem 0.2rem" }}>Velocidad (m/s)</th><th style={{ padding: "0.5rem 0.2rem" }}>Video</th>
-                    </tr></thead>
+                    <thead>
+  <tr style={{ borderBottom: "1px solid #1E293B", color: "#64748B", textAlign: "left" }}>
+    <th style={{ padding: "0.5rem 0.2rem" }}>Fecha evento</th>
+    <th style={{ padding: "0.5rem 0.2rem" }}>Localidad</th>
+    <th style={{ padding: "0.5rem 0.2rem" }}>Estado</th>
+    <th style={{ padding: "0.5rem 0.2rem" }}>Velocidad (m/s)</th>
+    <th style={{ padding: "0.5rem 0.2rem" }}>Video</th>
+  </tr>
+</thead>
                     <tbody>
                       {userSubmissions.map(sub => (
                         <tr key={sub.id} style={{ borderBottom: "1px solid #1E293B" }}>
