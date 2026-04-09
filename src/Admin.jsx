@@ -71,32 +71,43 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(null);
 
-  // Verificar sesión y rol de administrador
-  useEffect(() => {
-    const checkAdmin = async (user) => {
-      if (!user) return false;
+// ── Sesión y verificación de administrador (vía rol en profiles) ─────────
+useEffect(() => {
+  const checkAdmin = async (user) => {
+    if (!user) return false;
+    try {
       const { data, error } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single();
-      return !error && data?.role === "admin";
-    };
+      if (error) throw error;
+      return data?.role === "admin";
+    } catch (err) {
+      console.error("Error al verificar rol:", err);
+      return false;
+    }
+  };
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+  supabase.auth.getSession()
+    .then(async ({ data: { session } }) => {
       setSession(session);
       const admin = await checkAdmin(session?.user);
       setIsAdmin(admin);
       setAuthLoading(false);
+    })
+    .catch(err => {
+      console.error("Error en getSession:", err);
+      setAuthLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      const admin = await checkAdmin(session?.user);
-      setIsAdmin(admin);
-    });
-    return () => subscription.unsubscribe();
-  }, []);
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    setSession(session);
+    const admin = await checkAdmin(session?.user);
+    setIsAdmin(admin);
+  });
+  return () => subscription.unsubscribe();
+}, []);
 
   useEffect(() => {
     if (session && isAdmin) loadSubmissions();
