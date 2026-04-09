@@ -29,78 +29,26 @@ const STATUS_LABELS = {
 const TUCUMAN_CENTER = [-26.8241, -65.2226];
 
 export default function MapaEventos() {
-  const [submissions, setSubmissions] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [authLoading, setAuthLoading] = useState(true);
 
-  // --- Verificar si el usuario autenticado tiene rol admin en profiles ---
   useEffect(() => {
-    const checkAdmin = async (user) => {
-      if (!user) return false;
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-      if (!error && data?.role === "admin") return true;
-      return false;
-    };
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      const admin = await checkAdmin(session?.user);
-      setIsAdmin(admin);
-      setAuthLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const admin = await checkAdmin(session?.user);
-      setIsAdmin(admin);
-    });
-    return () => subscription.unsubscribe();
+    loadEvents();
   }, []);
 
-  // --- Cargar datos solo si es admin ---
-  useEffect(() => {
-    if (isAdmin) {
-      loadSubmissions();
-    } else {
-      setLoading(false);
-    }
-  }, [isAdmin]);
-
-  const loadSubmissions = async () => {
+  const loadEvents = async () => {
     setLoading(true);
     const { data, error } = await supabase
-      .from("submissions")
-      .select("id, file_name, department, locality, event_date, event_time, status, velocity_ms, lat, lng")
-      .not("lat", "is", null)
-      .not("lng", "is", null)
-      .order("created_at", { ascending: false });
-    if (!error && data) setSubmissions(data);
+      .from("map_events")   // ← usa la vista
+      .select("*")
+      .order("event_date", { ascending: false });
+    if (!error && data) setEvents(data);
     setLoading(false);
   };
 
-  const withCoords = submissions.filter(s => s.lat && s.lng);
-  const withoutCoords = submissions.filter(s => !s.lat || !s.lng);
+  const withCoords = events.filter(e => e.lat && e.lng);
+  const withoutCoords = events.filter(e => !e.lat || !e.lng);
 
-  // --- Pantallas de seguridad ---
-  if (authLoading) {
-    return <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>Cargando...</div>;
-  }
-  if (!isAdmin) {
-    return (
-      <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 48 }}>⛔</div>
-          <h2>Acceso denegado</h2>
-          <p>No tienes permisos para ver el mapa.</p>
-        </div>
-      </div>
-    );
-  }
-
-  // --- Renderizado del mapa (solo admin) ---
   return (
     <div style={{ fontFamily: "'Courier New', monospace", background: "#0A0E1A", minHeight: "100vh", color: "#E2E8F0" }}>
       <style>{`
@@ -123,17 +71,17 @@ export default function MapaEventos() {
             <div style={{ fontSize: "0.58rem", color: "#38BDF8", letterSpacing: "0.14em" }}>MAPA DE EVENTOS · TUCUMÁN</div>
           </div>
         </div>
-        <button className="refresh-btn" onClick={loadSubmissions}>↺ Actualizar</button>
+        <button className="refresh-btn" onClick={loadEvents}>↺ Actualizar</button>
       </header>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1.5rem" }}>
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px,1fr))", gap: "0.75rem", marginBottom: "1.5rem" }}>
           {[
-            ["📥", "Total",          submissions.length,                                      "#38BDF8"],
-            ["📍", "Geolocalizados", withCoords.length,                                       "#10B981"],
-            ["⏳", "En cola",        submissions.filter(s=>s.status==="pending").length,       "#F59E0B"],
-            ["✅", "Completados",    submissions.filter(s=>s.status==="done").length,          "#10B981"],
+            ["📥", "Total",          events.length,                                      "#38BDF8"],
+            ["📍", "Geolocalizados", withCoords.length,                                 "#10B981"],
+            ["⏳", "En cola",        events.filter(e=>e.status==="pending").length,     "#F59E0B"],
+            ["✅", "Completados",    events.filter(e=>e.status==="done").length,        "#10B981"],
           ].map(([icon, label, count, color]) => (
             <div key={label} className="stat-card">
               <div style={{ fontSize: 18, marginBottom: "0.25rem" }}>{icon}</div>
@@ -158,43 +106,28 @@ export default function MapaEventos() {
           <div style={{ textAlign: "center", padding: "3rem", color: "#334155" }}>⏳ Cargando mapa...</div>
         ) : (
           <div style={{ borderRadius: 8, overflow: "hidden", border: "1px solid #1E293B", height: 500 }}>
-            <MapContainer
-              center={TUCUMAN_CENTER}
-              zoom={9}
-              style={{ height: "100%", width: "100%" }}
-            >
-              <TileLayer
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-              />
-              {withCoords.map(s => (
+            <MapContainer center={TUCUMAN_CENTER} zoom={9} style={{ height: "100%", width: "100%" }}>
+              <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" attribution='&copy; <a href="https://carto.com/">CARTO</a>' />
+              {withCoords.map(e => (
                 <CircleMarker
-                  key={s.id}
-                  center={[s.lat, s.lng]}
+                  key={e.id}
+                  center={[e.lat, e.lng]}
                   radius={10}
                   pathOptions={{
-                    color: STATUS_COLORS[s.status] || "#38BDF8",
-                    fillColor: STATUS_COLORS[s.status] || "#38BDF8",
+                    color: STATUS_COLORS[e.status] || "#38BDF8",
+                    fillColor: STATUS_COLORS[e.status] || "#38BDF8",
                     fillOpacity: 0.8,
                     weight: 2
                   }}
                 >
                   <Popup className="custom-popup">
                     <div style={{ minWidth: 200, padding: "0.25rem" }}>
-                      <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#F1F5F9", marginBottom: 6 }}>
-                        🎬 {s.file_name}
-                      </div>
-                      <div style={{ fontSize: "0.65rem", color: "#64748B", marginBottom: 3 }}>📍 {s.department} · {s.locality}</div>
-                      <div style={{ fontSize: "0.65rem", color: "#64748B", marginBottom: 3 }}>📅 {s.event_date} · 🕐 {s.event_time?.slice(0,5)} hs</div>
-                      {s.velocity_ms && (
-                        <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: "1.2rem", fontWeight: 700, color: "#38BDF8", marginTop: 6 }}>
-                          {s.velocity_ms} m/s
-                        </div>
-                      )}
+                      <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#F1F5F9", marginBottom: 6 }}>🎬 {e.file_name}</div>
+                      <div style={{ fontSize: "0.65rem", color: "#64748B", marginBottom: 3 }}>📍 {e.department} · {e.locality}</div>
+                      <div style={{ fontSize: "0.65rem", color: "#64748B", marginBottom: 3 }}>📅 {e.event_date}</div>
+                      {e.velocity_ms && <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: "1.2rem", fontWeight: 700, color: "#38BDF8", marginTop: 6 }}>{e.velocity_ms} m/s</div>}
                       <div style={{ marginTop: 6 }}>
-                        <span style={{ fontSize: "0.6rem", color: STATUS_COLORS[s.status], background: `${STATUS_COLORS[s.status]}20`, padding: "0.15rem 0.4rem", borderRadius: 3 }}>
-                          {STATUS_LABELS[s.status]}
-                        </span>
+                        <span style={{ fontSize: "0.6rem", color: STATUS_COLORS[e.status], background: `${STATUS_COLORS[e.status]}20`, padding: "0.15rem 0.4rem", borderRadius: 3 }}>{STATUS_LABELS[e.status]}</span>
                       </div>
                     </div>
                   </Popup>
@@ -207,19 +140,15 @@ export default function MapaEventos() {
         {/* Videos sin coordenadas */}
         {withoutCoords.length > 0 && (
           <div style={{ marginTop: "1.5rem" }}>
-            <div style={{ fontSize: "0.72rem", color: "#475569", marginBottom: "0.75rem", letterSpacing: "0.08em" }}>
-              📭 {withoutCoords.length} VIDEO{withoutCoords.length > 1 ? "S" : ""} SIN COORDENADAS GPS
-            </div>
+            <div style={{ fontSize: "0.72rem", color: "#475569", marginBottom: "0.75rem", letterSpacing: "0.08em" }}>📭 {withoutCoords.length} VIDEO{withoutCoords.length > 1 ? "S" : ""} SIN COORDENADAS GPS</div>
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {withoutCoords.map(s => (
-                <div key={s.id} style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 6, padding: "0.7rem 1rem", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
+              {withoutCoords.map(e => (
+                <div key={e.id} style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 6, padding: "0.7rem 1rem", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem" }}>
                   <div>
-                    <div style={{ fontSize: "0.75rem", color: "#CBD5E1", fontWeight: 700 }}>{s.file_name}</div>
-                    <div style={{ fontSize: "0.62rem", color: "#475569" }}>📍 {s.department} · {s.locality} · 📅 {s.event_date}</div>
+                    <div style={{ fontSize: "0.75rem", color: "#CBD5E1", fontWeight: 700 }}>{e.file_name}</div>
+                    <div style={{ fontSize: "0.62rem", color: "#475569" }}>📍 {e.department} · {e.locality} · 📅 {e.event_date}</div>
                   </div>
-                  <span style={{ fontSize: "0.6rem", color: STATUS_COLORS[s.status], background: `${STATUS_COLORS[s.status]}20`, padding: "0.15rem 0.4rem", borderRadius: 3, alignSelf: "center" }}>
-                    {STATUS_LABELS[s.status]}
-                  </span>
+                  <span style={{ fontSize: "0.6rem", color: STATUS_COLORS[e.status], background: `${STATUS_COLORS[e.status]}20`, padding: "0.15rem 0.4rem", borderRadius: 3, alignSelf: "center" }}>{STATUS_LABELS[e.status]}</span>
                 </div>
               ))}
             </div>
