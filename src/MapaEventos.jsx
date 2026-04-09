@@ -26,17 +26,40 @@ const STATUS_LABELS = {
   error:      "Error",
 };
 
-// Centro de Tucumán
 const TUCUMAN_CENTER = [-26.8241, -65.2226];
 
 export default function MapaEventos() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  
+  // --- Nuevos estados para autenticación ---
+  const [session, setSession] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
+  // --- Verificar sesión y rol de administrador ---
   useEffect(() => {
-    loadSubmissions();
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setIsAdmin(session?.user?.email === "hdaguirre@herrera.unt.edu.ar"); // ← tu email
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsAdmin(session?.user?.email === "hdaguirre@herrera.unt.edu.ar");
+    });
+    return () => subscription.unsubscribe();
   }, []);
+
+  // --- Cargar datos solo si es admin ---
+  useEffect(() => {
+    if (isAdmin) {
+      loadSubmissions();
+    } else {
+      setLoading(false); // No cargar datos si no es admin
+    }
+  }, [isAdmin]);
 
   const loadSubmissions = async () => {
     setLoading(true);
@@ -53,6 +76,36 @@ export default function MapaEventos() {
   const withCoords = submissions.filter(s => s.lat && s.lng);
   const withoutCoords = submissions.filter(s => !s.lat || !s.lng);
 
+  // --- Pantalla de carga inicial (verificando sesión) ---
+  if (authLoading) {
+    return <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>Cargando...</div>;
+  }
+
+  // --- No hay sesión ---
+  if (!session) {
+    return (
+      <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "white", textAlign: "center" }}>
+        <h2>Acceso restringido</h2>
+        <p>Debes iniciar sesión como administrador para ver el mapa.</p>
+        <a href="/admin" style={{ color: "#38BDF8" }}>Ir al panel de administración</a>
+      </div>
+    );
+  }
+
+  // --- Sesión pero no es admin ---
+  if (!isAdmin) {
+    return (
+      <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontSize: 48 }}>⛔</div>
+          <h2>Acceso denegado</h2>
+          <p>No tienes permisos para ver el mapa.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Renderizado del mapa (solo admin) ---
   return (
     <div style={{ fontFamily: "'Courier New', monospace", background: "#0A0E1A", minHeight: "100vh", color: "#E2E8F0" }}>
       <style>{`
