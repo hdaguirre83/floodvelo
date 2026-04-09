@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from "react-leaflet";
+import { MapContainer, TileLayer, Popup, CircleMarker } from "react-leaflet";
 import { supabase } from "./supabaseClient";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -31,23 +31,31 @@ const TUCUMAN_CENTER = [-26.8241, -65.2226];
 export default function MapaEventos() {
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
-  
-  // --- Nuevos estados para autenticación ---
-  const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // --- Verificar sesión y rol de administrador ---
+  // --- Verificar si el usuario autenticado tiene rol admin en profiles ---
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setIsAdmin(session?.user?.email === "hdaguirre@herrera.unt.edu.ar"); // ← tu email
+    const checkAdmin = async (user) => {
+      if (!user) return false;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (!error && data?.role === "admin") return true;
+      return false;
+    };
+
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const admin = await checkAdmin(session?.user);
+      setIsAdmin(admin);
       setAuthLoading(false);
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setIsAdmin(session?.user?.email === "hdaguirre@herrera.unt.edu.ar");
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const admin = await checkAdmin(session?.user);
+      setIsAdmin(admin);
     });
     return () => subscription.unsubscribe();
   }, []);
@@ -57,7 +65,7 @@ export default function MapaEventos() {
     if (isAdmin) {
       loadSubmissions();
     } else {
-      setLoading(false); // No cargar datos si no es admin
+      setLoading(false);
     }
   }, [isAdmin]);
 
@@ -76,23 +84,10 @@ export default function MapaEventos() {
   const withCoords = submissions.filter(s => s.lat && s.lng);
   const withoutCoords = submissions.filter(s => !s.lat || !s.lng);
 
-  // --- Pantalla de carga inicial (verificando sesión) ---
+  // --- Pantallas de seguridad ---
   if (authLoading) {
     return <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>Cargando...</div>;
   }
-
-  // --- No hay sesión ---
-  if (!session) {
-    return (
-      <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "white", textAlign: "center" }}>
-        <h2>Acceso restringido</h2>
-        <p>Debes iniciar sesión como administrador para ver el mapa.</p>
-        <a href="/admin" style={{ color: "#38BDF8" }}>Ir al panel de administración</a>
-      </div>
-    );
-  }
-
-  // --- Sesión pero no es admin ---
   if (!isAdmin) {
     return (
       <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "white" }}>
@@ -120,7 +115,6 @@ export default function MapaEventos() {
         .refresh-btn:hover { color: #94A3B8; border-color: #38BDF8; }
       `}</style>
 
-      {/* Header */}
       <header style={{ borderBottom: "1px solid #1E293B", padding: "0.9rem 1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "0.75rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
           <span style={{ fontSize: 20 }}>🌊</span>
@@ -133,7 +127,6 @@ export default function MapaEventos() {
       </header>
 
       <main style={{ maxWidth: 1100, margin: "0 auto", padding: "1.5rem" }}>
-
         {/* Stats */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px,1fr))", gap: "0.75rem", marginBottom: "1.5rem" }}>
           {[
@@ -185,7 +178,6 @@ export default function MapaEventos() {
                     fillOpacity: 0.8,
                     weight: 2
                   }}
-                  eventHandlers={{ click: () => setSelected(s) }}
                 >
                   <Popup className="custom-popup">
                     <div style={{ minWidth: 200, padding: "0.25rem" }}>
@@ -233,7 +225,6 @@ export default function MapaEventos() {
             </div>
           </div>
         )}
-
       </main>
     </div>
   );
