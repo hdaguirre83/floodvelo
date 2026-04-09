@@ -8,6 +8,17 @@ const STATUS_CONFIG = {
   error:      { label: "Error",      color: "#EF4444", icon: "❌" },
 };
 
+// ── Componente de acceso denegado ──────────────────────────────────────────
+const AccessDenied = () => (
+  <div style={{ background: "#0A0E1A", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#E2E8F0" }}>
+    <div style={{ textAlign: "center" }}>
+      <div style={{ fontSize: 48 }}>⛔</div>
+      <h2 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: "2rem" }}>Acceso denegado</h2>
+      <p>No tenés permisos de administrador.</p>
+    </div>
+  </div>
+);
+
 // ── Fila individual (componente separado para poder usar useState) ──────────
 function SubmissionRow({ s, onUpdateStatus, onUpdateVelocity, updating }) {
   const [velInput, setVelInput] = useState(s.velocity_ms || "");
@@ -83,6 +94,7 @@ function SubmissionRow({ s, onUpdateStatus, onUpdateVelocity, updating }) {
 // ── Panel principal ───────────────────────────────────────────────────────
 export default function Admin() {
   const [session, setSession] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
@@ -91,16 +103,30 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [updating, setUpdating] = useState(null);
 
-  // ── Sesión ──────────────────────────────────────────────────────────────
+  // ── Sesión y verificación de administrador ──────────────────────────────
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user?.email === "admin@floodvelo.com") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session?.user?.email === "admin@floodvelo.com") {
+        setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
+      }
+    });
     return () => subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
-    if (session) loadSubmissions();
-  }, [session]);
+    if (session && isAdmin) loadSubmissions();
+  }, [session, isAdmin]);
 
   // ── Login ───────────────────────────────────────────────────────────────
   const handleLogin = async () => {
@@ -114,6 +140,8 @@ export default function Admin() {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSubmissions([]);
+    setSession(null);
+    setIsAdmin(false);
   };
 
   // ── Datos ───────────────────────────────────────────────────────────────
@@ -180,6 +208,8 @@ export default function Admin() {
       </div>
     </div>
   );
+
+  if (!isAdmin) return <AccessDenied />;
 
   // ── ADMIN PANEL ─────────────────────────────────────────────────────────
   return (
