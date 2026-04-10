@@ -613,7 +613,7 @@ export default function App() {
                 <div style={{ background: "#0A0E1A", padding: "1rem", borderRadius: 8, marginTop: "1rem" }}>
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "1rem", color: "#38BDF8" }}>📘 ¿Qué es RIVeR?</div>
                   <p style={{ fontSize: "0.75rem", color: "#94A3B8", marginTop: "0.5rem" }}>
-                    RIVeR (Rapid Image Velocimetry and Ranging) es el software especializado que utilizamos para procesar los videos. Podés conocer más en su sitio oficial: <a href="https://riverdischarge.blogspot.com/" target="_blank" rel="noopener noreferrer">https://riverdischarge.blogspot.com/</a>
+                    RIVeR (Rectification of Image Velocity Results) es el software especializado que utilizamos para procesar los videos. Podés conocer más en su sitio oficial: <a href="https://riverdischarge.blogspot.com/" target="_blank" rel="noopener noreferrer">https://riverdischarge.blogspot.com/</a>
                   </p>
                 </div>
               </div>
