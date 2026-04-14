@@ -407,7 +407,7 @@ export default function App() {
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "center" }}>
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.3rem", color: "#F1F5F9", lineHeight: 1.15, marginBottom: "0.4rem" }}>
-                    CONTRIBUÍ CON LA CIENCIA HÍDRICA LA <span style={{ color: "#38BDF8" }}>CIENCIA HÍDRICA</span>
+                    CONTRIBUÍ CON LA <span style={{ color: "#38BDF8" }}>CIENCIA HÍDRICA</span>
                   </div>
                   <div style={{ fontSize: "0.69rem", color: "#64748B", lineHeight: 1.6 }}>
                     Subí un video de inundación en Tucumán. Los algoritmos LSPIV de RIVeR estimarán la velocidad superficial del flujo.
