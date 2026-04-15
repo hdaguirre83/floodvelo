@@ -667,7 +667,7 @@ export default function App() {
         {tab === "contacto" && (
           <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.8rem", color: "#38BDF8", marginBottom: "1rem" }}>📬 Contacto</div>
-            <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>✉️ <a href="mailto:CazadoresdeCrecidas@gmail.com">CazadoresdeCrecidas@gmail.com</a></div>
+            <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>✉️ <a href="mailto:cazadoresdecrecidastuc@gmail.com">cazadoresdecrecidastuc@gmail.com</a></div>
             <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>📞 WhatsApp / Teléfono: <strong>+54 381 000-0000</strong> (próximamente línea oficial)</div>
             <div style={{ fontSize: "0.75rem", color: "#64748B", marginTop: "1rem" }}>Podés escribirnos para consultas, sugerencias o para sumarte como voluntario.</div>
           </div>
