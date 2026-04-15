@@ -81,7 +81,13 @@ export default function App() {
   const [userSubmissions, setUserSubmissions] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
   const [subsError, setSubsError] = useState("");
+  const [cameraActive, setCameraActive] = useState(false);
+  const [mediaStream, setMediaStream] = useState(null);
+  const [mediaRecorder, setMediaRecorder] = useState(null);
+  const [recording, setRecording] = useState(false);
+  const [cameraError, setCameraError] = useState("");
   const fileRef = useRef();
+  const videoRef = useRef(null);
   const xhrRef = useRef(null);
 
   useEffect(() => {
@@ -128,7 +134,51 @@ export default function App() {
     const result = await analyzeVideo(file);
     setQcResult(result); setQcLoading(false);
   };
+// --- Funciones para grabar video con cámara ---
+const startCamera = async () => {
+  setCameraError("");
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    setMediaStream(stream);
+    setCameraActive(true);
+  } catch (err) {
+    console.error(err);
+    setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
+  }
+};
 
+const stopCamera = () => {
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+    setMediaStream(null);
+  }
+  setCameraActive(false);
+  setRecording(false);
+  setMediaRecorder(null);
+};
+
+const startRecording = () => {
+  if (!mediaStream) return;
+  const chunks = [];
+  const recorder = new MediaRecorder(mediaStream);
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+  recorder.onstop = () => {
+    const blob = new Blob(chunks, { type: "video/mp4" });
+    const file = new File([blob], `grabacion_${Date.now()}.mp4`, { type: "video/mp4" });
+    acceptFile(file);
+    stopCamera();
+  };
+  recorder.start();
+  setMediaRecorder(recorder);
+  setRecording(true);
+};
+
+const stopRecording = () => {
+  if (mediaRecorder && recording) {
+    mediaRecorder.stop();
+    setRecording(false);
+  }
+};
   const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const getGeolocation = () => {
@@ -249,6 +299,12 @@ export default function App() {
   useEffect(() => {
     if (tab === "misvideos" && user) loadUserSubmissions();
   }, [tab, user]);
+
+  useEffect(() => {
+  if (videoRef.current && mediaStream) {
+    videoRef.current.srcObject = mediaStream;
+  }
+}, [mediaStream]);
 
   const QCPanel = () => {
     if (qcLoading) return (
@@ -433,6 +489,37 @@ export default function App() {
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📍 4 puntos fijos visibles</span>
               </div>
             </div>
+<div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
+  <button 
+    onClick={startCamera}
+    style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}
+  >
+    🎥 Grabar video ahora
+  </button>
+  <span style={{ fontSize: "0.65rem", color: "#64748B" }}>📱 Funciona mejor en celular</span>
+</div>
+{cameraActive && (
+  <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
+    <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        style={{ width: "100%", maxHeight: "400px", borderRadius: "8px", background: "#000" }}
+      />
+      <div>
+        {!recording ? (
+          <button onClick={startRecording} style={{ background: "#EF4444", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>🔴 Comenzar grabación</button>
+        ) : (
+          <button onClick={stopRecording} style={{ background: "#10B981", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>⏹️ Detener grabación</button>
+        )}
+        <button onClick={stopCamera} style={{ marginLeft: "0.5rem", background: "#475569", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>✕ Cerrar cámara</button>
+      </div>
+    </div>
+    {cameraError && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: "0.5rem" }}>{cameraError}</div>}
+  </div>
+)}    
             <div className={`drop-zone${dragOver?" over":""}`} style={{ padding: "2rem 1.5rem", textAlign: "center" }}
               onDragOver={e=>{e.preventDefault();setDragOver(true)}} onDragLeave={()=>setDragOver(false)} onDrop={handleDrop}
               onClick={()=>!uploading && fileRef.current.click()}>
