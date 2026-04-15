@@ -11,7 +11,7 @@ const VIDEO_CONDITIONS = ["Diurno - cielo despejado","Diurno - nublado","Diurno 
 const CAMERA_TYPES = ["Smartphone (frontal)","Smartphone (trasera)","Drone / UAV","Cámara fija instalada","Cámara de acción (GoPro, etc.)","Otro"];
 const TUCUMAN_DEPTS = ["Capital","Burruyacú","Cruz Alta","Chicligasta","Famaillá","Graneros","Juan B. Alberdi","La Cocha","Leales","Lules","Monteros","Río Chico","Simoca","Tafí del Valle","Tafí Viejo","Trancas","Yerba Buena"];
 
-const MIN_DURATION_SEC = 15;
+const MIN_DURATION_SEC = 10;
 const MIN_WIDTH = 1280;
 const MIN_HEIGHT = 720;
 
@@ -103,7 +103,7 @@ export default function App() {
   const getFormValidationError = () => {
     if (!selectedFile) return "📹 Seleccioná un video primero.";
     if (!qcResult) return "⏳ Analizando calidad del video...";
-    if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥15s, resolución ≥720p).";
+    if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥10s, resolución ≥720p).";
     if (!form.date) return "📅 Completá la fecha del evento.";
     if (!form.time) return "⏰ Completá la hora de la captura.";
     if (!form.locality) return "📍 Completá la localidad / barrio.";
@@ -427,7 +427,7 @@ export default function App() {
             <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "0.85rem 1.1rem" }}>
               <div style={{ fontSize: "0.63rem", color: "#64748B", letterSpacing: "0.1em", marginBottom: "0.5rem", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700 }}>REQUISITOS MÍNIMOS DEL VIDEO</div>
               <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 15-20 seg</strong></span>
+                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 10 seg</strong> <span style={{ color: "#F59E0B" }}>(recomendado 30 seg para mejor análisis)</span></span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📐 Resolución: <strong style={{ color: "#CBD5E1" }}>mín. 720p</strong></span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>🔒 Sin zoom ni paneo</span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📍 4 puntos fijos visibles</span>
@@ -574,7 +574,7 @@ export default function App() {
                 <div className="grid2">
                   <GuideItem icon="📍" title="1. POSICIÓN DE LA CÁMARA" color="#38BDF8" items={["Filmá desde posición elevada (puente, orilla alta)","Apuntá en ángulo oblicuo al flujo","Ideal: cámara fija","Incluí la mayor superficie de agua posible"]} />
                   <GuideItem icon="🏗️" title="2. REFERENCIAS FIJAS" color="#38BDF8" items={["Asegurate que se vean objetos fijos en orillas","Permiten convertir píxeles a metros","4 puntos no alineados visibles"]} />
-                  <GuideItem icon="⏱️" title="3. DURACIÓN Y ESTABILIDAD" color="#10B981" items={["Filmá al menos 15-20 segundos","Mové la cámara lo menos posible","Evitá paneos o zoom"]} />
+                  <GuideItem icon="⏱️" title="3. DURACIÓN Y ESTABILIDAD" color="#10B981" items={["Filmá al menos 10 segundos","Mové la cámara lo menos posible","Evitá paneos o zoom"]} />
                   <GuideItem icon="💡" title="4. CONDICIONES IDEALES" color="#10B981" items={["Superficie con partículas visibles","Evitá reflejos intensos","Luz natural diurna"]} />
                 </div>
                 <GuideItem icon="🚫" title="5. QUÉ NO HACER" color="#EF4444" items={["❌ No hacer paneo","❌ No grabar en movimiento","❌ Sin referencias fijas","❌ Zoom digital","❌ Menos de 15 segundos"]} />
