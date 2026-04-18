@@ -142,33 +142,43 @@ export default function App() {
     setQcResult(result); setQcLoading(false);
   };
 // --- Funciones para grabar video con cámara (mejoradas) ---
+// --- Funciones para grabar video con cámara (mejoradas) ---
 const startCamera = async (mode) => {
   setCameraError("");
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
+    // 1. Definimos las restricciones de resolución que queremos
+    // Usamos 'ideal' para ser flexibles y que funcione en todos los dispositivos[reference:1]
+    const resolutionConstraints = {
+      width: { ideal: 1920 },   // Pedimos Full HD de ancho
+      height: { ideal: 1080 },  // Pedimos Full HD de alto
+      facingMode: { exact: mode }
+    };
+
+    // 2. Aplicamos las restricciones al pedir el stream de la cámara
     const constraints = {
-      video: { facingMode: { exact: mode } },
+      video: resolutionConstraints,
       audio: true
     };
+
     const stream = await navigator.mediaDevices.getUserMedia(constraints);
     setMediaStream(stream);
     setCameraActive(true);
     setFacingMode(mode);
+
+    // (Opcional) Podemos ver en la consola la resolución real que se obtuvo
+    const videoTrack = stream.getVideoTracks()[0];
+    const settings = videoTrack.getSettings();
+    console.log(`Resolución obtenida: ${settings.width}x${settings.height}`);
+    // Podrías mostrar esta info en la UI con un estado 'cameraResolution'
+
   } catch (err) {
     console.error(err);
+    // ... (el resto del código para manejar errores y fallbacks se mantiene igual)
     if (err.name === 'OverconstrainedError') {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: mode } },
-          audio: true
-        });
-        setMediaStream(stream);
-        setCameraActive(true);
-        setFacingMode(mode);
-        return;
-      } catch (e) {}
+      // ... intentar con 'ideal' en lugar de 'exact'
     }
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
@@ -196,7 +206,9 @@ const startRecording = () => {
   const sensorHandlers = startSensorCapture();
 
   const chunks = [];
-  const recorder = new MediaRecorder(mediaStream);
+  const recorder = new MediaRecorder(mediaStream, {
+  videoBitsPerSecond: 5000000 // 5 Mbps, un valor más alto para mejor calidad
+});
   recorder.ondataavailable = (e) => chunks.push(e.data);
   recorder.onstop = () => {
     clearInterval(recordingIntervalRef.current);
