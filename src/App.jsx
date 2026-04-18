@@ -2,16 +2,16 @@ import React, { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
 // ── Cloudinary config ──────────────────────────────────────────────────────
-const CLOUDINARY_CLOUD = "dasxovn1b";
-const CLOUDINARY_PRESET = "floodvelo_videos";
-const CLOUDINARY_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`;
+const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+const CLOUDINARY_URL = import.meta.env.VITE_CLOUDINARY_URL;
 
 // ── Constantes ─────────────────────────────────────────────────────────────
 const VIDEO_CONDITIONS = ["Diurno - cielo despejado","Diurno - nublado","Diurno - lluvia activa","Nocturno - iluminado","Nocturno - sin iluminación"];
 const CAMERA_TYPES = ["Smartphone (frontal)","Smartphone (trasera)","Drone / UAV","Cámara fija instalada","Cámara de acción (GoPro, etc.)","Otro"];
 const TUCUMAN_DEPTS = ["Capital","Burruyacú","Cruz Alta","Chicligasta","Famaillá","Graneros","Juan B. Alberdi","La Cocha","Leales","Lules","Monteros","Río Chico","Simoca","Tafí del Valle","Tafí Viejo","Trancas","Yerba Buena"];
 
-const MIN_DURATION_SEC = 15;
+const MIN_DURATION_SEC = 10;
 const MIN_WIDTH = 1280;
 const MIN_HEIGHT = 720;
 
@@ -86,9 +86,16 @@ export default function App() {
   const [mediaRecorder, setMediaRecorder] = useState(null);
   const [recording, setRecording] = useState(false);
   const [cameraError, setCameraError] = useState("");
+  const [facingMode, setFacingMode] = useState("environment");
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [showGrid, setShowGrid] = useState(false);
+  const [excessiveMotion, setExcessiveMotion] = useState(false);
+  let recordingIntervalRef = useRef(null);
+  let lastMotionAlertRef = useRef(0);
   const fileRef = useRef();
   const videoRef = useRef(null);
   const xhrRef = useRef(null);
+  const sensorDataRef = useRef({ accelerometer: [], gyroscope: [] });
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -109,7 +116,7 @@ export default function App() {
   const getFormValidationError = () => {
     if (!selectedFile) return "📹 Seleccioná un video primero.";
     if (!qcResult) return "⏳ Analizando calidad del video...";
-    if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥15s, resolución ≥720p).";
+    if (!qcResult.passed) return "❌ El video no cumple los requisitos mínimos (duración ≥10s, resolución ≥720p).";
     if (!form.date) return "📅 Completá la fecha del evento.";
     if (!form.time) return "⏰ Completá la hora de la captura.";
     if (!form.locality) return "📍 Completá la localidad / barrio.";
@@ -134,15 +141,35 @@ export default function App() {
     const result = await analyzeVideo(file);
     setQcResult(result); setQcLoading(false);
   };
-// --- Funciones para grabar video con cámara ---
-const startCamera = async () => {
+// --- Funciones para grabar video con cámara (mejoradas) ---
+const startCamera = async (mode) => {
   setCameraError("");
+  if (mediaStream) {
+    mediaStream.getTracks().forEach(track => track.stop());
+  }
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    const constraints = {
+      video: { facingMode: { exact: mode } },
+      audio: true
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     setMediaStream(stream);
     setCameraActive(true);
+    setFacingMode(mode);
   } catch (err) {
     console.error(err);
+    if (err.name === 'OverconstrainedError') {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: mode } },
+          audio: true
+        });
+        setMediaStream(stream);
+        setCameraActive(true);
+        setFacingMode(mode);
+        return;
+      } catch (e) {}
+    }
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
 };
@@ -155,14 +182,26 @@ const stopCamera = () => {
   setCameraActive(false);
   setRecording(false);
   setMediaRecorder(null);
+  if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
 };
 
 const startRecording = () => {
   if (!mediaStream) return;
+
+  setRecordingTime(0);
+  recordingIntervalRef.current = setInterval(() => {
+    setRecordingTime(t => t + 1);
+  }, 1000);
+
+  const sensorHandlers = startSensorCapture();
+
   const chunks = [];
   const recorder = new MediaRecorder(mediaStream);
   recorder.ondataavailable = (e) => chunks.push(e.data);
   recorder.onstop = () => {
+    clearInterval(recordingIntervalRef.current);
+    stopSensorCapture(sensorHandlers);
+    window._pendingSensorData = sensorDataRef.current;
     const blob = new Blob(chunks, { type: "video/mp4" });
     const file = new File([blob], `grabacion_${Date.now()}.mp4`, { type: "video/mp4" });
     acceptFile(file);
@@ -177,8 +216,73 @@ const stopRecording = () => {
   if (mediaRecorder && recording) {
     mediaRecorder.stop();
     setRecording(false);
+    if (recordingIntervalRef.current) clearInterval(recordingIntervalRef.current);
   }
 };
+
+const startSensorCapture = () => {
+  sensorDataRef.current = { accelerometer: [], gyroscope: [] };
+  setExcessiveMotion(false);
+
+  const handleMotion = (event) => {
+    const acc = event.accelerationIncludingGravity;
+    if (acc) {
+      sensorDataRef.current.accelerometer.push({
+        timestamp: Date.now(),
+        x: acc.x,
+        y: acc.y,
+        z: acc.z
+      });
+      const threshold = 2.0;
+      if (Math.abs(acc.x) > threshold || Math.abs(acc.y) > threshold || Math.abs(acc.z) > threshold) {
+        const now = Date.now();
+        if (now - lastMotionAlertRef.current > 2000) {
+          setExcessiveMotion(true);
+          lastMotionAlertRef.current = now;
+          setTimeout(() => setExcessiveMotion(false), 2000);
+        }
+      }
+    }
+  };
+
+  const handleOrientation = (event) => {
+    sensorDataRef.current.gyroscope.push({
+      timestamp: Date.now(),
+      alpha: event.alpha,
+      beta: event.beta,
+      gamma: event.gamma
+    });
+  };
+
+  if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission()
+      .then(permissionState => {
+        if (permissionState === 'granted') {
+          window.addEventListener('devicemotion', handleMotion);
+          window.addEventListener('deviceorientation', handleOrientation);
+        }
+      })
+      .catch(console.error);
+  } else {
+    window.addEventListener('devicemotion', handleMotion);
+    window.addEventListener('deviceorientation', handleOrientation);
+  }
+
+  return { handleMotion, handleOrientation };
+};
+
+const stopSensorCapture = (handlers) => {
+  if (handlers) {
+    window.removeEventListener('devicemotion', handlers.handleMotion);
+    window.removeEventListener('deviceorientation', handlers.handleOrientation);
+  }
+};
+
+const switchCamera = () => {
+  const newMode = facingMode === "user" ? "environment" : "user";
+  startCamera(newMode);
+};
+
   const setF = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
   const getGeolocation = () => {
@@ -218,30 +322,58 @@ const stopRecording = () => {
           setUploading(false);
           return;
         }
-        const { error: dbError } = await supabase.from("submissions").insert({
-          user_id: user.id,
-          user_email: user.email,
-          user_name: user.user_metadata?.full_name || null,
-          file_name: selectedFile.name,
-          file_path: cloudData.secure_url,
-          file_size_mb: parseFloat((selectedFile.size / 1e6).toFixed(2)),
-          event_date: form.date,
-          event_time: form.time,
-          department: form.dept,
-          locality: form.locality,
-          lat: latNum,
-          lng: lngNum,
-          light_condition: form.condition || null,
-          camera_type: form.camera || null,
-          notes: form.notes || null,
-          alt_contact: form.alt_contact || null,
-          status: "pending",
-        });
-        if (dbError) {
-          setError("Video subido pero error al guardar datos: " + dbError.message);
-          setUploading(false);
-          return;
-        }
+// Insertar submission y obtener el id
+const { data: insertedData, error: dbError } = await supabase
+  .from("submissions")
+  .insert({
+    user_id: user.id,
+    user_email: user.email,
+    user_name: user.user_metadata?.full_name || null,
+    file_name: selectedFile.name,
+    file_path: cloudData.secure_url,
+    file_size_mb: parseFloat((selectedFile.size / 1e6).toFixed(2)),
+    event_date: form.date,
+    event_time: form.time,
+    department: form.dept,
+    locality: form.locality,
+    lat: latNum,
+    lng: lngNum,
+    light_condition: form.condition || null,
+    camera_type: form.camera || null,
+    notes: form.notes || null,
+    alt_contact: form.alt_contact || null,
+    status: "pending",
+  })
+  .select();   // 👈 importante: devuelve el registro insertado
+
+if (dbError) {
+  setError("Video subido pero error al guardar datos: " + dbError.message);
+  setUploading(false);
+  return;
+}
+
+const submissionId = insertedData[0].id;   // Obtenemos el ID de la submission
+
+// Guardar datos de sensores si existen
+if (window._pendingSensorData) {
+  const { accelerometer, gyroscope } = window._pendingSensorData;
+  if (accelerometer && accelerometer.length > 0) {
+    await supabase.from("sensor_data").insert({
+      submission_id: submissionId,
+      sensor_type: "accelerometer",
+      data: accelerometer
+    });
+  }
+  if (gyroscope && gyroscope.length > 0) {
+    await supabase.from("sensor_data").insert({
+      submission_id: submissionId,
+      sensor_type: "gyroscope",
+      data: gyroscope
+    });
+  }
+  // Limpiar datos temporales
+  window._pendingSensorData = null;
+}
         setUploadProgress(100);
         setTimeout(() => {
           setUploading(false); setUploadProgress(0); setUploadStage("");
@@ -483,43 +615,68 @@ const stopRecording = () => {
             <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "0.85rem 1.1rem" }}>
               <div style={{ fontSize: "0.63rem", color: "#64748B", letterSpacing: "0.1em", marginBottom: "0.5rem", fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700 }}>REQUISITOS MÍNIMOS DEL VIDEO</div>
               <div style={{ display: "flex", gap: "1.5rem", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 15-20 seg</strong></span>
+                <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>⏱ Duración: <strong style={{ color: "#CBD5E1" }}>mín. 10 seg</strong></span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📐 Resolución: <strong style={{ color: "#CBD5E1" }}>mín. 720p</strong></span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>🔒 Sin zoom ni paneo</span>
                 <span style={{ fontSize: "0.68rem", color: "#94A3B8" }}>📍 4 puntos fijos visibles</span>
               </div>
             </div>
 <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-  <button 
-    onClick={startCamera}
-    style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}
-  >
-    🎥 Grabar video ahora
-  </button>
+<button onClick={() => startCamera(facingMode)} style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}>🎥 Grabar video ahora</button>
   <span style={{ fontSize: "0.65rem", color: "#64748B" }}>📱 Funciona mejor en celular</span>
 </div>
 {cameraActive && (
   <div className="card" style={{ padding: "1rem", marginBottom: "1rem" }}>
     <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem" }}>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        style={{ width: "100%", maxHeight: "400px", borderRadius: "8px", background: "#000" }}
-      />
-      <div>
+      <div style={{ position: "relative", width: "100%" }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ width: "100%", height: "auto", maxHeight: "70vh", borderRadius: "8px", background: "#000", objectFit: "cover" }}
+        />
+        {showGrid && (
+          <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.3) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.3) 1px, transparent 1px)",
+            backgroundSize: "33.33% 33.33%",
+            pointerEvents: "none"
+          }} />
+        )}
+        {recording && (
+          <div style={{ position: "absolute", top: 10, left: 10, background: "rgba(0,0,0,0.7)", padding: "4px 8px", borderRadius: 4, color: "white", fontFamily: "monospace", fontSize: "0.8rem" }}>
+            🔴 {Math.floor(recordingTime / 60)}:{String(recordingTime % 60).padStart(2, "0")}
+          </div>
+        )}
+        {excessiveMotion && (
+          <div style={{ position: "absolute", bottom: 10, left: 10, background: "rgba(239,68,68,0.9)", padding: "4px 8px", borderRadius: 4, color: "white", fontSize: "0.7rem" }}>
+            ⚠️ Movimiento excesivo - intentá estabilizar
+          </div>
+        )}
+      </div>
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", justifyContent: "center" }}>
         {!recording ? (
           <button onClick={startRecording} style={{ background: "#EF4444", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>🔴 Comenzar grabación</button>
         ) : (
           <button onClick={stopRecording} style={{ background: "#10B981", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>⏹️ Detener grabación</button>
         )}
-        <button onClick={stopCamera} style={{ marginLeft: "0.5rem", background: "#475569", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>✕ Cerrar cámara</button>
+        <button onClick={switchCamera} style={{ background: "#475569", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>
+          🔄 Cámara {facingMode === "user" ? "trasera" : "frontal"}
+        </button>
+        <button onClick={() => setShowGrid(!showGrid)} style={{ background: "#475569", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>
+          {showGrid ? "⊞ Ocultar grid" : "⊞ Mostrar grid"}
+        </button>
+        <button onClick={stopCamera} style={{ background: "#475569", border: "none", borderRadius: "4px", color: "white", padding: "0.5rem 1rem", cursor: "pointer" }}>✕ Cerrar cámara</button>
       </div>
     </div>
     {cameraError && <div style={{ color: "#EF4444", fontSize: "0.7rem", marginTop: "0.5rem" }}>{cameraError}</div>}
   </div>
-)}    
+)}
             <div className={`drop-zone${dragOver?" over":""}`} style={{ padding: "2rem 1.5rem", textAlign: "center" }}
               onDragOver={e=>{e.preventDefault();setDragOver(true)}} onDragLeave={()=>setDragOver(false)} onDrop={handleDrop}
               onClick={()=>!uploading && fileRef.current.click()}>
@@ -661,7 +818,7 @@ const stopRecording = () => {
                 <div className="grid2">
                   <GuideItem icon="📍" title="1. POSICIÓN DE LA CÁMARA" color="#38BDF8" items={["Filmá desde posición elevada (puente, orilla alta)","Apuntá en ángulo oblicuo al flujo","Ideal: cámara fija","Incluí la mayor superficie de agua posible"]} />
                   <GuideItem icon="🏗️" title="2. REFERENCIAS FIJAS" color="#38BDF8" items={["Asegurate que se vean objetos fijos en orillas","Permiten convertir píxeles a metros","4 puntos no alineados visibles"]} />
-                  <GuideItem icon="⏱️" title="3. DURACIÓN Y ESTABILIDAD" color="#10B981" items={["Filmá al menos 15-20 segundos","Mové la cámara lo menos posible","Evitá paneos o zoom"]} />
+                  <GuideItem icon="⏱️" title="3. DURACIÓN Y ESTABILIDAD" color="#10B981" items={["Filmá al menos 10 segundos","Mové la cámara lo menos posible","Evitá paneos o zoom"]} />
                   <GuideItem icon="💡" title="4. CONDICIONES IDEALES" color="#10B981" items={["Superficie con partículas visibles","Evitá reflejos intensos","Luz natural diurna"]} />
                 </div>
                 <GuideItem icon="🚫" title="5. QUÉ NO HACER" color="#EF4444" items={["❌ No hacer paneo","❌ No grabar en movimiento","❌ Sin referencias fijas","❌ Zoom digital","❌ Menos de 15 segundos"]} />
@@ -754,7 +911,7 @@ const stopRecording = () => {
         {tab === "contacto" && (
           <div className="card" style={{ padding: "1.5rem", textAlign: "center" }}>
             <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 900, fontSize: "1.8rem", color: "#38BDF8", marginBottom: "1rem" }}>📬 Contacto</div>
-            <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>✉️ <a href="mailto:CazadoresdeCrecidas@gmail.com">CazadoresdeCrecidas@gmail.com</a></div>
+            <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>✉️ <a href="mailto:cazadoresdecrecidastuc@gmail.com">cazadoresdecrecidastuc@gmail.com</a></div>
             <div style={{ fontSize: "1rem", marginBottom: "0.5rem" }}>📞 WhatsApp / Teléfono: <strong>+54 381 000-0000</strong> (próximamente línea oficial)</div>
             <div style={{ fontSize: "0.75rem", color: "#64748B", marginTop: "1rem" }}>Podés escribirnos para consultas, sugerencias o para sumarte como voluntario.</div>
           </div>
