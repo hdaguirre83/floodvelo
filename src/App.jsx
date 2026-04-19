@@ -31,11 +31,19 @@ const analyzeVideo = (file) =>
       const width = video.videoWidth;
       const height = video.videoHeight;
       URL.revokeObjectURL(url);
+      
+      // Calcular lado largo y lado corto
+      const longSide = Math.max(width, height);
+      const shortSide = Math.min(width, height);
+      const resolutionOk = (longSide >= 1280 && shortSide >= 720);
+      
       resolve({
-        duration, width, height,
+        duration,
+        width,
+        height,
         durationOk: duration >= MIN_DURATION_SEC,
-        resolutionOk: width >= MIN_WIDTH && height >= MIN_HEIGHT,
-        passed: duration >= MIN_DURATION_SEC && width >= MIN_WIDTH && height >= MIN_HEIGHT,
+        resolutionOk,   // ← ahora acepta vertical
+        passed: duration >= MIN_DURATION_SEC && resolutionOk,
       });
     };
     video.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
@@ -450,48 +458,54 @@ if (window._pendingSensorData) {
   }
 }, [mediaStream]);
 
-  const QCPanel = () => {
-    if (qcLoading) return (
-      <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <span>🔍</span>
-        <div style={{ fontSize: "0.72rem", color: "#64748B" }}>ANALIZANDO CALIDAD DEL VIDEO...</div>
+const QCPanel = () => {
+  if (qcLoading) return (
+    <div style={{ background: "#0F172A", border: "1px solid #1E293B", borderRadius: 8, padding: "1rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      <span>🔍</span>
+      <div style={{ fontSize: "0.72rem", color: "#64748B" }}>ANALIZANDO CALIDAD DEL VIDEO...</div>
+    </div>
+  );
+  if (!qcResult) return null;
+  const { duration, width, height, durationOk, resolutionOk, passed } = qcResult;
+  return (
+    <div style={{ background: passed ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${passed ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 8, padding: "1rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.85rem" }}>
+        <span>{passed ? "✅" : "❌"}</span>
+        <div>
+          <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: passed ? "#10B981" : "#EF4444" }}>
+            {passed ? "VIDEO APROBADO — CUMPLE LOS REQUISITOS MÍNIMOS" : "VIDEO RECHAZADO — NO CUMPLE LOS REQUISITOS MÍNIMOS"}
+          </div>
+        </div>
       </div>
-    );
-    if (!qcResult) return null;
-    const { duration, width, height, durationOk, resolutionOk, passed } = qcResult;
-    return (
-      <div style={{ background: passed ? "rgba(16,185,129,0.06)" : "rgba(239,68,68,0.06)", border: `1px solid ${passed ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.3)"}`, borderRadius: 8, padding: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", marginBottom: "0.85rem" }}>
-          <span>{passed ? "✅" : "❌"}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "#0A0E1A", borderRadius: 6, padding: "0.6rem 0.85rem" }}>
+          <span>{durationOk ? "✅" : "❌"}</span>
           <div>
-            <div style={{ fontFamily: "'Barlow Condensed',sans-serif", fontWeight: 700, fontSize: "0.95rem", color: passed ? "#10B981" : "#EF4444" }}>
-              {passed ? "VIDEO APROBADO — CUMPLE LOS REQUISITOS MÍNIMOS" : "VIDEO RECHAZADO — NO CUMPLE LOS REQUISITOS MÍNIMOS"}
+            <div style={{ fontSize: "0.65rem", color: "#64748B" }}>DURACIÓN</div>
+            <div style={{ fontSize: "0.78rem", color: durationOk ? "#10B981" : "#EF4444", fontWeight: 700 }}>
+              {formatDuration(duration)} <span style={{ fontSize: "0.62rem", color: "#475569", fontWeight: 400 }}>(mínimo {formatDuration(MIN_DURATION_SEC)})</span>
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "#0A0E1A", borderRadius: 6, padding: "0.6rem 0.85rem" }}>
-            <span>{durationOk ? "✅" : "❌"}</span>
-            <div>
-              <div style={{ fontSize: "0.65rem", color: "#64748B" }}>DURACIÓN</div>
-              <div style={{ fontSize: "0.78rem", color: durationOk ? "#10B981" : "#EF4444", fontWeight: 700 }}>
-                {formatDuration(duration)} <span style={{ fontSize: "0.62rem", color: "#475569", fontWeight: 400 }}>(mínimo {formatDuration(MIN_DURATION_SEC)})</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "#0A0E1A", borderRadius: 6, padding: "0.6rem 0.85rem" }}>
-            <span>{resolutionOk ? "✅" : "❌"}</span>
-            <div>
-              <div style={{ fontSize: "0.65rem", color: "#64748B" }}>RESOLUCIÓN</div>
-              <div style={{ fontSize: "0.78rem", color: resolutionOk ? "#10B981" : "#EF4444", fontWeight: 700 }}>
-                {width}x{height}px <span style={{ fontSize: "0.62rem", color: "#475569" }}>(mínimo {MIN_WIDTH}x{MIN_HEIGHT}px — 720p)</span>
-              </div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", background: "#0A0E1A", borderRadius: 6, padding: "0.6rem 0.85rem" }}>
+          <span>{resolutionOk ? "✅" : "❌"}</span>
+          <div>
+            <div style={{ fontSize: "0.65rem", color: "#64748B" }}>RESOLUCIÓN</div>
+            <div style={{ fontSize: "0.78rem", color: resolutionOk ? "#10B981" : "#EF4444", fontWeight: 700 }}>
+              {width}x{height}px <span style={{ fontSize: "0.62rem", color: "#475569" }}>(mínimo 720p: 1280x720 horizontal o 720x1280 vertical)</span>
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+      {/* Mensaje de recomendación para videos verticales */}
+      {width < height && (
+        <div style={{ fontSize: "0.65rem", color: "#F59E0B", marginTop: "0.75rem", textAlign: "center", background: "rgba(245,158,11,0.1)", padding: "0.4rem", borderRadius: 4 }}>
+          📱 Video vertical. Para mejores resultados en el análisis LSPIV, grabá en horizontal (apaisado).
+        </div>
+      )}
+    </div>
+  );
+};
 
   const GuideItem = ({ icon, title, items, color = "#38BDF8" }) => (
     <div style={{ background: "#0F172A", border: `1px solid ${color}25`, borderRadius: 8, padding: "1.1rem" }}>
