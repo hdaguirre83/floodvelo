@@ -157,38 +157,33 @@ const startCamera = async (mode) => {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // 1. Definimos las restricciones de resolución que queremos
-    // Usamos 'ideal' para ser flexibles y que funcione en todos los dispositivos[reference:1]
-    const resolutionConstraints = {
-      width: { ideal: 1920 },   // Pedimos Full HD de ancho
-      height: { ideal: 1080 },  // Pedimos Full HD de alto
-      facingMode: { exact: mode }
-    };
-
-    // 2. Aplicamos las restricciones al pedir el stream de la cámara
-    const constraints = {
-      video: resolutionConstraints,
-      audio: true
-    };
-
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    // Para PC: si es 'user' o 'environment' intentamos con facingMode ideal,
+    // pero si falla (como en webcam USB), usamos solo video: true
+    let constraints;
+    if (mode === "user" || mode === "environment") {
+      constraints = {
+        video: { facingMode: { ideal: mode } },
+        audio: true
+      };
+    } else {
+      constraints = { video: true, audio: true };
+    }
+    
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (firstError) {
+      // Si falla por facingMode (webcam típica), reintentamos sin facingMode
+      console.warn("Falló con facingMode, reintentando sin él", firstError);
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    }
+    
     setMediaStream(stream);
     setCameraActive(true);
     setFacingMode(mode);
-
-    // (Opcional) Podemos ver en la consola la resolución real que se obtuvo
-    const videoTrack = stream.getVideoTracks()[0];
-    const settings = videoTrack.getSettings();
-    console.log(`Resolución obtenida: ${settings.width}x${settings.height}`);
-    // Podrías mostrar esta info en la UI con un estado 'cameraResolution'
-
   } catch (err) {
     console.error(err);
-    // ... (el resto del código para manejar errores y fallbacks se mantiene igual)
-    if (err.name === 'OverconstrainedError') {
-      // ... intentar con 'ideal' en lugar de 'exact'
-    }
-    setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
+    setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos y que la webcam esté conectada.");
   }
 };
 
@@ -323,7 +318,8 @@ const switchCamera = () => {
     const formData = new FormData();
     formData.append("file", selectedFile);
     formData.append("upload_preset", CLOUDINARY_PRESET);
-    formData.append("folder", "floodvelo");
+    //formData.append("folder", "floodvelo");// opcional
+// NO pongas "resource_type"
     formData.append("resource_type", "video");
 
     const xhr = new XMLHttpRequest();
