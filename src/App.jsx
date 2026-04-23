@@ -151,36 +151,17 @@ export default function App() {
   };
 // --- Funciones para grabar video con cámara (mejoradas) ---
 // --- Funciones para grabar video con cámara (mejoradas) ---
-const startCamera = async (mode) => {
+const startCamera = async () => {
   setCameraError("");
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // Para PC: si es 'user' o 'environment' intentamos con facingMode ideal,
-    // pero si falla (como en webcam USB), usamos solo video: true
-    let constraints;
-    if (mode === "user" || mode === "environment") {
-      constraints = {
-        video: { facingMode: { ideal: mode } },
-        audio: true
-      };
-    } else {
-      constraints = { video: true, audio: true };
-    }
-    
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (firstError) {
-      // Si falla por facingMode (webcam típica), reintentamos sin facingMode
-      console.warn("Falló con facingMode, reintentando sin él", firstError);
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-    }
-    
+    // Pedimos solo video y audio, sin facingMode (así funciona en PC y celular)
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
     setMediaStream(stream);
     setCameraActive(true);
-    setFacingMode(mode);
+    setFacingMode("default");
   } catch (err) {
     console.error(err);
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos y que la webcam esté conectada.");
@@ -644,7 +625,7 @@ const QCPanel = () => {
               </div>
             </div>
 <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-<button onClick={() => startCamera(facingMode)} style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}>🎥 Grabar video ahora</button>
+<button onClick={startCamera} style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}>🎥 Grabar video ahora</button>
   <span style={{ fontSize: "0.65rem", color: "#64748B" }}>📱 Funciona mejor en celular</span>
 </div>
 {cameraActive && (
