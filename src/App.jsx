@@ -50,7 +50,7 @@ const analyzeVideo = (file) =>
     video.src = url;
   });
 
-const EMPTY_FORM = { dept: "Capital", locality: "", date: "", time: "", condition: "", camera: "", notes: "", lat: "", lng: "", alt_contact: "" };
+const EMPTY_FORM = { dept: "Capital", locality: "", date: "", time: "", condition: "", camera: "", notes: "", lat: "", lng: "", alt_contact: "", flow_type:"" };
 
 const handleGoogleLogin = async () => {
   const redirectUrl = import.meta.env.PROD 
@@ -339,6 +339,7 @@ const { data: insertedData, error: dbError } = await supabase
     camera_type: form.camera || null,
     notes: form.notes || null,
     alt_contact: form.alt_contact || null,
+    flow_type: form.flow_type,
     status: "pending",
   })
   .select();   // 👈 importante: devuelve el registro insertado
@@ -731,28 +732,43 @@ const QCPanel = () => {
                 </div>
               </div>
             </div>
+
             <div className="card" style={{ padding: "1.35rem" }}>
               <div className="section-title">🎬 DATOS DEL VIDEO</div>
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 <div className="grid2">
-                  <div><label className="field-label">Condiciones de luz</label>
-                    <select className="field-input" value={form.condition} onChange={e=>setF("condition",e.target.value)} disabled={uploading}>
+                  <div>
+                    <label className="field-label">Condiciones de luz</label>
+                    <select className="field-input" value={form.condition} onChange={e => setF("condition", e.target.value)} disabled={uploading}>
                       <option value="">— seleccionar —</option>
-                      {VIDEO_CONDITIONS.map(c=><option key={c}>{c}</option>)}
+                      {VIDEO_CONDITIONS.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
-                  <div><label className="field-label">Tipo de cámara</label>
-                    <select className="field-input" value={form.camera} onChange={e=>setF("camera",e.target.value)} disabled={uploading}>
+                  <div>
+                    <label className="field-label">Tipo de cámara</label>
+                    <select className="field-input" value={form.camera} onChange={e => setF("camera", e.target.value)} disabled={uploading}>
                       <option value="">— seleccionar —</option>
-                      {CAMERA_TYPES.map(c=><option key={c}>{c}</option>)}
+                      {CAMERA_TYPES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                 </div>
-                <div><label className="field-label">Observaciones</label>
-                  <textarea className="field-input" placeholder="Nombre del río, estimación visual de velocidad, descripción del evento..." value={form.notes} onChange={e=>setF("notes",e.target.value)} disabled={uploading} />
+
+                <div>
+                  <label className="field-label">Tipo de flujo <span className="req">*</span></label>
+                  <select className="field-input" value={form.flow_type} onChange={e => setF("flow_type", e.target.value)} disabled={uploading}>
+                    <option value="">— seleccionar —</option>
+                    <option value="cauce">Flujo en cauce natural o canal</option>
+                    <option value="urbano">Flujo en calle, descampado o área urbana</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="field-label">Observaciones</label>
+                  <textarea className="field-input" placeholder="Nombre del río, estimación visual de velocidad, descripción del evento..." value={form.notes} onChange={e => setF("notes", e.target.value)} disabled={uploading} />
                 </div>
               </div>
             </div>
+
             <div className="card" style={{ padding: "1.35rem" }}>
               <div className="section-title">📞 CONTACTO ALTERNATIVO (OPCIONAL)</div>
               <div style={{ fontSize: "0.67rem", color: "#475569", marginBottom: "0.75rem" }}>
@@ -781,6 +797,7 @@ const QCPanel = () => {
                   <div style={{ fontSize: "0.64rem", color: "#334155" }}><span className="req">*</span> Obligatorio: video aprobado · fecha · hora · localidad</div>
                   <button className="upload-btn" disabled={!formValid()} onClick={handleUpload}>ENVIAR PARA ANÁLISIS →</button>
                 </div>
+                
                 {getFormValidationError() && (
                   <div style={{ background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, padding: "0.5rem", fontSize: "0.7rem", color: "#EF4444", textAlign: "center" }}>
                     {getFormValidationError()}
