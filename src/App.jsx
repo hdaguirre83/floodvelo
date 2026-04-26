@@ -151,20 +151,56 @@ export default function App() {
   };
 // --- Funciones para grabar video con cámara (mejoradas) ---
 // --- Funciones para grabar video con cámara (mejoradas) ---
-const startCamera = async () => {
+const startCamera = async (mode) => {
   setCameraError("");
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // Pedimos solo video y audio, sin facingMode (así funciona en PC y celular)
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    // Obtener todos los dispositivos de video
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(device => device.kind === 'videoinput');
+    
+    let selectedDeviceId = null;
+    if (mode === "environment") {
+      // Buscar cámara trasera
+      const backCamera = videoDevices.find(device => 
+        device.label.toLowerCase().includes('back') || 
+        device.label.toLowerCase().includes('rear') ||
+        device.label.toLowerCase().includes('environment')
+      );
+      if (backCamera) {
+        selectedDeviceId = backCamera.deviceId;
+      } else {
+        // Si no encuentra, usar la primera que no sea frontal (heurística)
+        const nonFront = videoDevices.find(device => 
+          !device.label.toLowerCase().includes('front')
+        );
+        selectedDeviceId = nonFront ? nonFront.deviceId : videoDevices[0]?.deviceId;
+      }
+    } else {
+      // Buscar cámara frontal
+      const frontCamera = videoDevices.find(device => 
+        device.label.toLowerCase().includes('front')
+      );
+      selectedDeviceId = frontCamera ? frontCamera.deviceId : videoDevices[0]?.deviceId;
+    }
+    
+    if (!selectedDeviceId) {
+      throw new Error("No se encontró ninguna cámara");
+    }
+    
+    const constraints = {
+      video: { deviceId: { exact: selectedDeviceId } },
+      audio: true
+    };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
     setMediaStream(stream);
     setCameraActive(true);
-    setFacingMode("default");
+    setFacingMode(mode);
   } catch (err) {
-    console.error(err);
-    setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos y que la webcam esté conectada.");
+    console.error("Error al acceder a la cámara:", err);
+    setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
 };
 
