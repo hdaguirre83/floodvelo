@@ -157,49 +157,28 @@ const startCamera = async (mode) => {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // Obtener todos los dispositivos de video
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    
-    let selectedDeviceId = null;
-    if (mode === "environment") {
-      // Buscar cámara trasera
-      const backCamera = videoDevices.find(device => 
-        device.label.toLowerCase().includes('back') || 
-        device.label.toLowerCase().includes('rear') ||
-        device.label.toLowerCase().includes('environment')
-      );
-      if (backCamera) {
-        selectedDeviceId = backCamera.deviceId;
-      } else {
-        // Si no encuentra, usar la primera que no sea frontal (heurística)
-        const nonFront = videoDevices.find(device => 
-          !device.label.toLowerCase().includes('front')
-        );
-        selectedDeviceId = nonFront ? nonFront.deviceId : videoDevices[0]?.deviceId;
-      }
-    } else {
-      // Buscar cámara frontal
-      const frontCamera = videoDevices.find(device => 
-        device.label.toLowerCase().includes('front')
-      );
-      selectedDeviceId = frontCamera ? frontCamera.deviceId : videoDevices[0]?.deviceId;
-    }
-    
-    if (!selectedDeviceId) {
-      throw new Error("No se encontró ninguna cámara");
-    }
-    
-    const constraints = {
-      video: { deviceId: { exact: selectedDeviceId } },
+    // Intentar primero con facingMode exacto (funciona en la mayoría de móviles)
+    let constraints = {
+      video: { facingMode: { exact: mode } },
       audio: true
     };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (firstError) {
+      console.warn("Falló facingMode exact, reintentando con ideal", firstError);
+      // Si falla, intentar con facingMode ideal (menos estricto)
+      constraints = {
+        video: { facingMode: { ideal: mode } },
+        audio: true
+      };
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    }
     setMediaStream(stream);
     setCameraActive(true);
     setFacingMode(mode);
   } catch (err) {
-    console.error("Error al acceder a la cámara:", err);
+    console.error("Error final al acceder a la cámara:", err);
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
 };
@@ -662,7 +641,7 @@ const QCPanel = () => {
               </div>
             </div>
 <div style={{ display: "flex", gap: "1rem", marginBottom: "1rem", flexWrap: "wrap", alignItems: "center" }}>
-<button onClick={startCamera} style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}>🎥 Grabar video ahora</button>
+<button onClick={()=> startCamera(facingMode)} style={{ background: "#0EA5E9", border: "none", borderRadius: "4px", color: "white", fontFamily: "'Space Mono', monospace", fontSize: "0.72rem", padding: "0.5rem 1rem", cursor: "pointer" }}>🎥 Grabar video ahora</button>
   <span style={{ fontSize: "0.65rem", color: "#64748B" }}>📱 Funciona mejor en celular</span>
 </div>
 {cameraActive && (
