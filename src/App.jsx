@@ -421,7 +421,7 @@ if (window._pendingSensorData) {
         }, 500);
       } else {
         let msg = "Error al subir el video.";
-        try { msg = JSON.parse(xhr.responseText)?.error?.message || msg; } catch {}
+        try { msg = JSON.parse(xhr.responseText)?.error?.message || msg; } catch (e) { console.error("Error al parsear respuesta de Cloudinary:", e); }
         setError(msg);
         setUploading(false);
       }
