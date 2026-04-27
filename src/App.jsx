@@ -150,53 +150,56 @@ export default function App() {
     setQcResult(result); setQcLoading(false);
   };
 // --- Funciones para grabar video con cámara (mejoradas) ---
-// --- Funciones para grabar video con cámara (mejoradas) ---
 const startCamera = async (mode) => {
   setCameraError("");
   if (mediaStream) {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // Exigir Full HD (1920x1080) y 30 fps
-    const constraints = {
+    // Paso 1: Intentar Full HD (1920x1080, 30 fps)
+    let constraints = {
       video: {
         facingMode: { exact: mode },
-        width: { min: 1920, ideal: 1920, max: 1920 },
-        height: { min: 1080, ideal: 1080, max: 1080 },
-        frameRate: { min: 30, ideal: 30 }
+        width: { exact: 1920 },
+        height: { exact: 1080 },
+        frameRate: { exact: 30 }
       },
       audio: true
     };
-    
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints);
-    } catch (firstError) {
-      console.warn("No se pudo obtener Full HD. Disponible: ", firstError);
-      // Fallback: exigir al menos 1280x720 (lo mínimo que necesita la app)
-      const fallbackConstraints = {
+      console.log("✅ Grabando en Full HD (1920x1080)");
+    } catch (fullHdError) {
+      console.warn("No se pudo Full HD, intentando HD (1280x720)", fullHdError);
+      // Paso 2: Intentar al menos HD (1280x720, 30 fps)
+      constraints = {
         video: {
-          facingMode: { ideal: mode },
-          width: { min: 1280, ideal: 1280 },
-          height: { min: 720, ideal: 720 },
-          frameRate: { min: 25, ideal: 30 }
+          facingMode: { exact: mode },
+          width: { exact: 1280 },
+          height: { exact: 720 },
+          frameRate: { exact: 30 }
         },
         audio: true
       };
-      stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
-      setCameraError("⚠️ Tu dispositivo no alcanza Full HD. El video se grabará en menor calidad y podría no pasar la validación.");
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+        console.log("✅ Grabando en HD (1280x720)");
+        setCameraError("⚠️ Tu dispositivo no alcanza Full HD. El video se grabó en HD (720p) y será aceptado.");
+        // El mensaje se mostrará mientras dure la sesión de cámara
+        setTimeout(() => setCameraError(""), 5000); // lo borramos a los 5 segundos
+      } catch (hdError) {
+        // Paso 3: No se pudo ni HD, mostrar error y no activar cámara
+        console.error("No se pudo obtener ni HD. El dispositivo no cumple requisitos mínimos.", hdError);
+        setCameraError("❌ Tu dispositivo no alcanza la resolución mínima requerida (1280x720). No podrás grabar videos con esta app.");
+        return; // No activamos la cámara
+      }
     }
-    
     setMediaStream(stream);
     setCameraActive(true);
     setFacingMode(mode);
-    
-    // Mostrar la resolución obtenida (opcional, para depuración)
-    const videoTrack = stream.getVideoTracks()[0];
-    const settings = videoTrack.getSettings();
-    console.log(`Resolución de grabación: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
   } catch (err) {
-    console.error("Error al acceder a la cámara:", err);
+    console.error("Error general al acceder a la cámara:", err);
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
 };
