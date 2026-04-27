@@ -12,8 +12,8 @@ const CAMERA_TYPES = ["Smartphone (frontal)","Smartphone (trasera)","Drone / UAV
 const TUCUMAN_DEPTS = ["Capital","Burruyacú","Cruz Alta","Chicligasta","Famaillá","Graneros","Juan B. Alberdi","La Cocha","Leales","Lules","Monteros","Río Chico","Simoca","Tafí del Valle","Tafí Viejo","Trancas","Yerba Buena"];
 
 const MIN_DURATION_SEC = 10;
-const MIN_WIDTH = 1280;
-const MIN_HEIGHT = 720;
+const MIN_WIDTH = 1920;
+const MIN_HEIGHT = 1080;
 
 const formatDuration = (secs) => {
   const m = Math.floor(secs / 60).toString().padStart(2, "0");
@@ -157,28 +157,46 @@ const startCamera = async (mode) => {
     mediaStream.getTracks().forEach(track => track.stop());
   }
   try {
-    // Intentar primero con facingMode exacto (funciona en la mayoría de móviles)
-    let constraints = {
-      video: { facingMode: { exact: mode } },
+    // Exigir Full HD (1920x1080) y 30 fps
+    const constraints = {
+      video: {
+        facingMode: { exact: mode },
+        width: { min: 1920, ideal: 1920, max: 1920 },
+        height: { min: 1080, ideal: 1080, max: 1080 },
+        frameRate: { min: 30, ideal: 30 }
+      },
       audio: true
     };
+    
     let stream;
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints);
     } catch (firstError) {
-      console.warn("Falló facingMode exact, reintentando con ideal", firstError);
-      // Si falla, intentar con facingMode ideal (menos estricto)
-      constraints = {
-        video: { facingMode: { ideal: mode } },
+      console.warn("No se pudo obtener Full HD. Disponible: ", firstError);
+      // Fallback: exigir al menos 1280x720 (lo mínimo que necesita la app)
+      const fallbackConstraints = {
+        video: {
+          facingMode: { ideal: mode },
+          width: { min: 1280, ideal: 1280 },
+          height: { min: 720, ideal: 720 },
+          frameRate: { min: 25, ideal: 30 }
+        },
         audio: true
       };
-      stream = await navigator.mediaDevices.getUserMedia(constraints);
+      stream = await navigator.mediaDevices.getUserMedia(fallbackConstraints);
+      setCameraError("⚠️ Tu dispositivo no alcanza Full HD. El video se grabará en menor calidad y podría no pasar la validación.");
     }
+    
     setMediaStream(stream);
     setCameraActive(true);
     setFacingMode(mode);
+    
+    // Mostrar la resolución obtenida (opcional, para depuración)
+    const videoTrack = stream.getVideoTracks()[0];
+    const settings = videoTrack.getSettings();
+    console.log(`Resolución de grabación: ${settings.width}x${settings.height} @ ${settings.frameRate}fps`);
   } catch (err) {
-    console.error("Error final al acceder a la cámara:", err);
+    console.error("Error al acceder a la cámara:", err);
     setCameraError("No se pudo acceder a la cámara o micrófono. Verificá los permisos.");
   }
 };
