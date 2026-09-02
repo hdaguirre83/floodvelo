@@ -53,9 +53,7 @@ const analyzeVideo = (file) =>
 const EMPTY_FORM = { dept: "Capital", locality: "", date: "", time: "", condition: "", camera: "", notes: "", lat: "", lng: "", alt_contact: "", flow_type:"" };
 
 const handleGoogleLogin = async () => {
-  const redirectUrl = import.meta.env.PROD 
-    ? 'https://floodvelo.vercel.app' 
-    : window.location.origin;
+  const redirectUrl = window.location.origin;
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: redirectUrl, queryParams: { access_type: 'offline', prompt: 'consent' } }
@@ -106,15 +104,29 @@ export default function App() {
   const sensorDataRef = useRef({ accelerometer: [], gyroscope: [] });
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-    return () => listener?.subscription.unsubscribe();
-  }, []);
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log("📌 Sesión inicial:", session);
+    setUser(session?.user ?? null);
+    setAuthLoading(false);
+  });
+  const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("🔄 Evento de autenticación:", event, session);
+    if (event === 'SIGNED_IN') {
+      console.log("✅ Usuario autenticado:", session?.user);
+    }
+    if (event === 'SIGNED_OUT') {
+      console.log("🚪 Usuario cerró sesión");
+    }
+    if (event === 'TOKEN_REFRESHED') {
+      console.log("🔄 Token refrescado");
+    }
+    if (event === 'USER_UPDATED') {
+      console.log("📝 Usuario actualizado");
+    }
+    setUser(session?.user ?? null);
+  });
+  return () => listener?.subscription.unsubscribe();
+}, []);
 
   useEffect(() => {
     return () => { if (preview) URL.revokeObjectURL(preview); };
